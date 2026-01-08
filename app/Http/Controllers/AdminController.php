@@ -75,7 +75,7 @@ class AdminController extends Controller
     }
 
     /**
-     * KOREKSI STATUS ABSENSI (INI YANG DIPAKAI MODAL)
+     * KOREKSI STATUS ABSENSI
      */
     public function updateAttendanceStatus(Request $request)
     {
@@ -85,21 +85,24 @@ class AdminController extends Controller
             'update_reason' => 'required|string|min:5',
         ]);
 
-        /** @var User $admin */
-        $admin = Auth::user();
+        try {
+            /** @var User $admin */
+            $admin = Auth::user();
 
-        $attendance = Attendance::where(
-            'attendance_id',
-            $request->attendance_id
-        )->firstOrFail();
+            // Gunakan where untuk memastikan pencarian primary key string (attendance_id)
+            $attendance = Attendance::where('attendance_id', $request->attendance_id)->firstOrFail();
 
-        $attendance->update([
-            'status' => $request->status,
-            'update_reason' => $request->update_reason,
-            'updated_by' => $admin->login_id,
-        ]);
+            $attendance->update([
+                'status' => $request->status,
+                'update_reason' => $request->update_reason,
+                // PERBAIKAN: Gunakan $admin->id (Integer) bukan login_id (String)
+                'updated_by' => $admin->id, 
+            ]);
 
-        return back()->with('success', 'Status absensi berhasil diperbarui.');
+            return back()->with('success', 'Status absensi berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui status: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -114,35 +117,41 @@ class AdminController extends Controller
         /** @var User $admin */
         $admin = Auth::user();
 
-        DB::transaction(function () use ($request, $id, $admin) {
+        try {
+            DB::transaction(function () use ($request, $id, $admin) {
 
-            $leave = LeaveRequest::findOrFail($id);
+                $leave = LeaveRequest::findOrFail($id);
 
-            $leave->update([
-                'status' => $request->action,
-                'approved_by' => $admin->login_id,
-                'approved_at' => now(),
-            ]);
+                $leave->update([
+                    'status' => $request->action,
+                    // PERBAIKAN: Gunakan $admin->id agar sesuai dengan tipe data INT di database
+                    'approved_by' => $admin->id,
+                    'approved_at' => now(),
+                ]);
 
-            // Jika disetujui → otomatis buat absensi izin
-            if ($request->action === 'disetujui') {
-                Attendance::updateOrCreate(
-                    [
-                        'internship_id' => $leave->internship_id,
-                        'attendance_date' => $leave->leave_date,
-                    ],
-                    [
-                        'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
-                        'check_in_time' => '08:00:00',
-                        'check_in_photo' => 'leave_approved.png',
-                        'status' => 'izin',
-                        'update_reason' => 'Izin disetujui: ' . $leave->reason,
-                    ]
-                );
-            }
-        });
+                // Jika disetujui → otomatis buat/update record absensi menjadi 'izin'
+                if ($request->action === 'disetujui') {
+                    Attendance::updateOrCreate(
+                        [
+                            'internship_id' => $leave->internship_id,
+                            'attendance_date' => $leave->leave_date,
+                        ],
+                        [
+                            'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
+                            'check_in_time' => '08:00:00',
+                            'check_in_photo' => 'leave_approved.png',
+                            'status' => 'izin',
+                            'update_reason' => 'Izin disetujui: ' . $leave->reason,
+                            'updated_by' => $admin->id,
+                        ]
+                    );
+                }
+            });
 
-        return back()->with('success', 'Permohonan izin berhasil diproses.');
+            return back()->with('success', 'Permohonan izin berhasil diproses.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memproses izin: ' . $e->getMessage());
+        }
     }
 
     // =========================================================================
@@ -169,9 +178,6 @@ class AdminController extends Controller
         return view('admin.index_peserta', compact('peserta', 'status'));
     }
 
-    /**
-     * UPDATE STATUS PKL (AKTIF / SELESAI)
-     */
     public function updateInternshipStatus(Request $request, $id)
     {
         Internship::where('internship_id', $id)->update([
@@ -181,9 +187,6 @@ class AdminController extends Controller
         return back()->with('success', 'Status peserta berhasil diperbarui.');
     }
 
-    /**
-     * TAMBAH PESERTA BARU
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -195,28 +198,31 @@ class AdminController extends Controller
             'end_date' => 'required|date|after:start_date',
         ]);
 
-        DB::transaction(function () use ($request) {
+        try {
+            DB::transaction(function () use ($request) {
+                $user = User::create([
+                    'login_id' => $request->login_id,
+                    'name' => $request->name,
+                    'role_id' => 'ROLE_PESERTA',
+                    'password' => Hash::make($request->login_id),
+                    'is_active' => 1,
+                ]);
 
-            $user = User::create([
-                'login_id' => $request->login_id,
-                'name' => $request->name,
-                'role_id' => 'ROLE_PESERTA',
-                'password' => Hash::make($request->login_id),
-                'is_active' => 1,
-            ]);
+                Internship::create([
+                    'internship_id' => 'INT-' . strtoupper(substr(uniqid(), -7)),
+                    'user_id' => $user->id,
+                    'institution_id' => $request->institution_id,
+                    'major_id' => $request->major_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                    'status' => 'aktif',
+                ]);
+            });
 
-            Internship::create([
-                'internship_id' => 'INT-' . strtoupper(substr(uniqid(), -7)),
-                'user_id' => $user->id,
-                'institution_id' => $request->institution_id,
-                'major_id' => $request->major_id,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'status' => 'aktif',
-            ]);
-        });
-
-        return back()->with('success', 'Peserta berhasil didaftarkan.');
+            return back()->with('success', 'Peserta berhasil didaftarkan.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mendaftarkan peserta: ' . $e->getMessage());
+        }
     }
 
     // =========================================================================
