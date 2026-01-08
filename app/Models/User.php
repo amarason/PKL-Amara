@@ -28,4 +28,12 @@ class User extends Authenticatable
     {
         return null;
     }
+
+    /**
+        * Relasi ke User (Admin yang melakukan koreksi)
+    */
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'updated_by', 'id');
+    }
 }

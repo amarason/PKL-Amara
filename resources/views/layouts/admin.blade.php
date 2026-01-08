@@ -33,34 +33,44 @@
                transform -translate-x-full transition-transform duration-300
                md:translate-x-0 md:flex md:flex-col">
 
-        <div class="p-8 text-[#3B82F6] text-3xl font-extrabold tracking-tight">
-            SIPRAKER
+        <div class="p-7 flex items-center space-x-3">
+            <img src="{{ asset('uploads/img/logo-pln.png') }}" 
+                alt="Logo PLN" 
+                class="w-[75px] h-auto object-contain">
+            
+            <span class="text-[#3B82F6] text-2xl font-extrabold tracking-tight">
+                SIPRAKER
+            </span>
         </div>
 
         <nav class="flex-grow px-4 space-y-2">
             <a href="{{ route('admin.dashboard') }}"
-               class="flex items-center px-6 py-4 rounded-2xl
-               {{ Request::is('admin/dashboard') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500' }}">
+            class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
+            {{ Request::is('admin/dashboard') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-grid-fill mr-4"></i> Dashboard
             </a>
 
             <a href="{{ route('admin.peserta.create') }}"
-               class="flex items-center px-6 py-4 rounded-2xl text-slate-400 hover:text-blue-500">
+            class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
+            {{ Request::is('admin/peserta/create') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-person-plus mr-4"></i> Tambah Peserta
             </a>
 
             <a href="{{ route('admin.peserta.index') }}"
-               class="flex items-center px-6 py-4 rounded-2xl text-slate-400 hover:text-blue-500">
+            class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
+            {{ Request::is('admin/peserta') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-people mr-4"></i> Manajemen Peserta
             </a>
 
-            <a href="#"
-               class="flex items-center px-6 py-4 rounded-2xl text-slate-400 hover:text-blue-500">
+            <a href="{{ route('admin.absensi.index') }}"
+            class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
+            {{ Request::is('admin/absensi*') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-calendar3 mr-4"></i> Absensi Harian
             </a>
 
             <a href="#"
-               class="flex items-center px-6 py-4 rounded-2xl text-slate-400 hover:text-blue-500">
+            class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
+            {{ Request::is('admin/rekap*') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-file-earmark-text mr-4"></i> Rekap Laporan
             </a>
         </nav>

@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
         // Absensi & Perizinan
         Route::get('/absensi', [AdminController::class, 'indexAbsensi'])->name('admin.absensi.index');
         Route::post('/izin/verifikasi/{id}', [AdminController::class, 'verifyLeave'])->name('admin.izin.verify');
+        Route::post('/absensi/update-status', [AdminController::class, 'updateAttendanceStatus'])->name('admin.absensi.updateStatus');
     });
 
     // --- RUTE KHUSUS PESERTA PKL ---
