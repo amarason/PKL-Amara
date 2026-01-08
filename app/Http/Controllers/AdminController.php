@@ -89,13 +89,11 @@ class AdminController extends Controller
             /** @var User $admin */
             $admin = Auth::user();
 
-            // Gunakan where untuk memastikan pencarian primary key string (attendance_id)
             $attendance = Attendance::where('attendance_id', $request->attendance_id)->firstOrFail();
 
             $attendance->update([
                 'status' => $request->status,
                 'update_reason' => $request->update_reason,
-                // PERBAIKAN: Gunakan $admin->id (Integer) bukan login_id (String)
                 'updated_by' => $admin->id, 
             ]);
 
