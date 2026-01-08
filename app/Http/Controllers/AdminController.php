@@ -1,425 +1,253 @@
 <?php
 
-
-
 namespace App\Http\Controllers;
 
-
-
+use App\Models\User;
+use App\Models\Internship;
+use App\Models\Attendance;
+use App\Models\Institution;
+use App\Models\Major;
+use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\DB;
-
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
-
-
 class AdminController extends Controller
-
 {
-
-    /**
-
-     * Menampilkan Dashboard Admin
-
-     */
+    // =========================================================================
+    // DASHBOARD
+    // =========================================================================
 
     public function index()
-
     {
-
-        $totalPeserta = DB::table('internship')->count();
-
-        $pesertaAktif = DB::table('internship')->where('status', 'aktif')->count();
-
-       
-
+        $totalPeserta = Internship::count();
+        $pesertaAktif = Internship::where('status', 'aktif')->count();
         $hariIni = Carbon::now()->toDateString();
 
-        $hadirHariIni = DB::table('attendance')
-
-            ->where('attendance_date', $hariIni)
-
+        $hadirHariIni = Attendance::whereDate('attendance_date', $hariIni)
             ->where('status', 'hadir')
-
             ->count();
 
-           
-
-        $izinHariIni = DB::table('attendance')
-
-            ->where('attendance_date', $hariIni)
-
+        $izinHariIni = Attendance::whereDate('attendance_date', $hariIni)
             ->where('status', 'izin')
-
             ->count();
 
-
-
-        $kehadiran = DB::table('attendance')
-
-            ->join('internship', 'attendance.internship_id', '=', 'internship.internship_id')
-
-            ->join('users', 'internship.user_id', '=', 'users.id')
-
-            ->select('users.name', 'internship.start_date', 'internship.end_date', 'attendance.*')
-
-            ->orderBy('attendance.created_at', 'desc')
-
+        $kehadiran = Attendance::with(['internship.user'])
+            ->latest()
             ->take(5)
-
             ->get();
 
-
-
         return view('admin.dashboard', compact(
-
-            'totalPeserta', 'pesertaAktif', 'hadirHariIni', 'izinHariIni', 'kehadiran'
-
+            'totalPeserta',
+            'pesertaAktif',
+            'hadirHariIni',
+            'izinHariIni',
+            'kehadiran'
         ));
-
     }
 
-
+    // =========================================================================
+    // ABSENSI HARIAN & PERIZINAN
+    // =========================================================================
 
     /**
-
-     * Manajemen Peserta (Search & Filter)
-
+     * Halaman Absensi Harian
      */
+    public function indexAbsensi(Request $request)
+    {
+        $tanggalDipilih = $request->get('tanggal', Carbon::now()->toDateString());
+
+        $attendance = Attendance::with(['internship.user'])
+            ->whereDate('attendance_date', $tanggalDipilih)
+            ->get();
+
+        $leaveRequests = LeaveRequest::with(['internship.user'])
+            ->where('status', 'menunggu')
+            ->get();
+
+        return view('admin.absensi', compact(
+            'attendance',
+            'leaveRequests',
+            'tanggalDipilih'
+        ));
+    }
+
+    /**
+     * KOREKSI STATUS ABSENSI (INI YANG DIPAKAI MODAL)
+     */
+    public function updateAttendanceStatus(Request $request)
+    {
+        $request->validate([
+            'attendance_id' => 'required|exists:attendance,attendance_id',
+            'status' => 'required|in:hadir,izin,alpha',
+            'update_reason' => 'required|string|min:5',
+        ]);
+
+        /** @var User $admin */
+        $admin = Auth::user();
+
+        $attendance = Attendance::where(
+            'attendance_id',
+            $request->attendance_id
+        )->firstOrFail();
+
+        $attendance->update([
+            'status' => $request->status,
+            'update_reason' => $request->update_reason,
+            'updated_by' => $admin->login_id,
+        ]);
+
+        return back()->with('success', 'Status absensi berhasil diperbarui.');
+    }
+
+    /**
+     * VERIFIKASI IZIN (SETUJUI / TOLAK)
+     */
+    public function verifyLeave(Request $request, $id)
+    {
+        $request->validate([
+            'action' => 'required|in:disetujui,ditolak'
+        ]);
+
+        /** @var User $admin */
+        $admin = Auth::user();
+
+        DB::transaction(function () use ($request, $id, $admin) {
+
+            $leave = LeaveRequest::findOrFail($id);
+
+            $leave->update([
+                'status' => $request->action,
+                'approved_by' => $admin->login_id,
+                'approved_at' => now(),
+            ]);
+
+            // Jika disetujui → otomatis buat absensi izin
+            if ($request->action === 'disetujui') {
+                Attendance::updateOrCreate(
+                    [
+                        'internship_id' => $leave->internship_id,
+                        'attendance_date' => $leave->leave_date,
+                    ],
+                    [
+                        'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
+                        'check_in_time' => '08:00:00',
+                        'check_in_photo' => 'leave_approved.png',
+                        'status' => 'izin',
+                        'update_reason' => 'Izin disetujui: ' . $leave->reason,
+                    ]
+                );
+            }
+        });
+
+        return back()->with('success', 'Permohonan izin berhasil diproses.');
+    }
+
+    // =========================================================================
+    // MANAJEMEN PESERTA PKL
+    // =========================================================================
 
     public function indexPeserta(Request $request)
-
     {
-
+        $status = $request->get('status', 'aktif');
         $search = $request->get('search');
 
-        $status = $request->get('status', 'aktif');
-
-
-
-        $query = DB::table('internship')
-
-            ->join('users', 'internship.user_id', '=', 'users.id')
-
-            ->join('major', 'internship.major_id', '=', 'major.major_id')
-
-            ->join('institution', 'internship.institution_id', '=', 'institution.institution_id')
-
-            ->select('users.name', 'users.login_id', 'major.major_name', 'institution.institution_name', 'internship.*')
-
-            ->where('internship.status', $status);
-
-
+        $query = Internship::with(['user', 'major', 'institution'])
+            ->where('status', $status);
 
         if ($search) {
-
-            $query->where(function($q) use ($search) {
-
-                $q->where('users.name', 'like', "%{$search}%")
-
-                  ->orWhere('users.login_id', 'like', "%{$search}%");
-
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('login_id', 'like', "%{$search}%");
             });
-
         }
 
-
-
-        $peserta = $query->orderBy('internship.created_at', 'desc')->get();
+        $peserta = $query->latest()->get();
 
         return view('admin.index_peserta', compact('peserta', 'status'));
-
     }
 
-
-
     /**
-
-     * Ambil data detail untuk modal edit (AJAX)
-
+     * UPDATE STATUS PKL (AKTIF / SELESAI)
      */
-
-    public function editPeserta($id)
-
+    public function updateInternshipStatus(Request $request, $id)
     {
-
-        $peserta = DB::table('internship')
-
-            ->join('users', 'internship.user_id', '=', 'users.id')
-
-            ->where('internship.internship_id', $id)
-
-            ->first();
-
-
-
-        return response()->json($peserta);
-
-    }
-
-
-
-    /**
-
-     * Update data peserta
-
-     */
-
-    public function updatePeserta(Request $request, $id)
-
-    {
-
-        $request->validate([
-
-            'name' => 'required',
-
-            'login_id' => 'required',
-
-            'institution_id' => 'required',
-
-            'major_id' => 'required',
-
-            'start_date' => 'required|date',
-
-            'end_date' => 'required|date|after:start_date',
-
+        Internship::where('internship_id', $id)->update([
+            'status' => $request->status
         ]);
-
-
-
-        try {
-
-            DB::transaction(function () use ($request, $id) {
-
-                $internship = DB::table('internship')->where('internship_id', $id)->first();
-
-
-
-                // 1. Update Tabel Users
-
-                DB::table('users')->where('id', $internship->user_id)->update([
-
-                    'name' => $request->name,
-
-                    'login_id' => $request->login_id,
-
-                    'updated_at' => now()
-
-                ]);
-
-
-
-                // 2. Update Tabel Internship
-
-                DB::table('internship')->where('internship_id', $id)->update([
-
-                    'institution_id' => $request->institution_id,
-
-                    'major_id' => $request->major_id,
-
-                    'start_date' => $request->start_date,
-
-                    'end_date' => $request->end_date,
-
-                    'updated_at' => now()
-
-                ]);
-
-            });
-
-
-
-            return back()->with('success', 'Data peserta berhasil diperbarui!');
-
-        } catch (\Exception $e) {
-
-            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
-
-        }
-
-    }
-
-
-
-    /**
-
-     * Update Status Peserta (Aktif/Selesai)
-
-     */
-
-    public function updateStatus(Request $request, $id)
-
-    {
-
-        DB::table('internship')->where('internship_id', $id)->update([
-
-            'status' => $request->status,
-
-            'updated_at' => now()
-
-        ]);
-
-
 
         return back()->with('success', 'Status peserta berhasil diperbarui.');
-
     }
 
-
-
     /**
-
-     * Tampilkan Form Tambah
-
+     * TAMBAH PESERTA BARU
      */
-
-    public function create()
-
-    {
-
-        $institutions = DB::table('institution')->get();
-
-        $majors = DB::table('major')->get();
-
-        return view('admin.create_peserta', compact('institutions', 'majors'));
-
-    }
-
-
-
-    /**
-
-     * Simpan Peserta Baru
-
-     */
-
     public function store(Request $request)
-
     {
-
         $request->validate([
-
             'login_id' => 'required|unique:users,login_id',
-
             'name' => 'required',
-
             'institution_id' => 'required',
-
             'major_id' => 'required',
-
             'start_date' => 'required|date',
-
             'end_date' => 'required|date|after:start_date',
-
         ]);
 
+        DB::transaction(function () use ($request) {
 
+            $user = User::create([
+                'login_id' => $request->login_id,
+                'name' => $request->name,
+                'role_id' => 'ROLE_PESERTA',
+                'password' => Hash::make($request->login_id),
+                'is_active' => 1,
+            ]);
 
-        try {
+            Internship::create([
+                'internship_id' => 'INT-' . strtoupper(substr(uniqid(), -7)),
+                'user_id' => $user->id,
+                'institution_id' => $request->institution_id,
+                'major_id' => $request->major_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'status' => 'aktif',
+            ]);
+        });
 
-            DB::transaction(function () use ($request) {
-
-                $userId = DB::table('users')->insertGetId([
-
-                    'login_id' => $request->login_id,
-
-                    'name' => $request->name,
-
-                    'role_id' => 'ROLE_PESERTA',
-
-                    'password' => Hash::make($request->login_id),
-
-                    'is_active' => 1,
-
-                    'created_at' => now(),
-
-                    'updated_at' => now(),
-
-                ]);
-
-
-
-                DB::table('internship')->insert([
-
-                    'internship_id' => 'INT-' . strtoupper(substr(uniqid(), -7)),
-
-                    'user_id' => $userId,
-
-                    'institution_id' => $request->institution_id,
-
-                    'major_id' => $request->major_id,
-
-                    'start_date' => $request->start_date,
-
-                    'end_date' => $request->end_date,
-
-                    'status' => 'aktif',
-
-                    'created_at' => now(),
-
-                ]);
-
-            });
-
-
-
-            return back()->with('success', 'Peserta '.$request->name.' berhasil didaftarkan!');
-
-
-
-        } catch (\Exception $e) {
-
-            return back()->with('error', 'Gagal: ' . $e->getMessage())->withInput();
-
-        }
-
+        return back()->with('success', 'Peserta berhasil didaftarkan.');
     }
 
-
-
-    /**
-
-     * AJAX Store Institution
-
-     */
+    // =========================================================================
+    // DATA MASTER
+    // =========================================================================
 
     public function storeInstitution(Request $request)
-
     {
+        $request->validate([
+            'name' => 'required|unique:institution,institution_name'
+        ]);
 
-        $request->validate(['name' => 'required|unique:institution,institution_name']);
+        $institution = Institution::create([
+            'institution_id' => 'INST-' . strtoupper(substr(uniqid(), -5)),
+            'institution_name' => $request->name,
+        ]);
 
-        $id = 'INST-' . strtoupper(substr(uniqid(), -5));
-
-        DB::table('institution')->insert(['institution_id' => $id, 'institution_name' => $request->name]);
-
-        return response()->json(['id' => $id, 'name' => $request->name]);
-
+        return response()->json($institution);
     }
-
-
-
-    /**
-
-     * AJAX Store Major
-
-     */
 
     public function storeMajor(Request $request)
-
     {
+        $request->validate([
+            'name' => 'required|unique:major,major_name'
+        ]);
 
-        $request->validate(['name' => 'required|unique:major,major_name']);
+        $major = Major::create([
+            'major_id' => 'MJR-' . strtoupper(substr(uniqid(), -5)),
+            'major_name' => $request->name,
+        ]);
 
-        $id = 'MJR-' . strtoupper(substr(uniqid(), -5));
-
-        DB::table('major')->insert(['major_id' => $id, 'major_name' => $request->name]);
-
-        return response()->json(['id' => $id, 'name' => $request->name]);
-
+        return response()->json($major);
     }
-
 }

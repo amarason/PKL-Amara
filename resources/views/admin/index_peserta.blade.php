@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center">
         <div>
             <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Manajemen Peserta</h2>
-            <p class="text-slate-400 text-sm font-medium mt-1">Kelola data dan status masa PKL mahasiswa/siswa.</p>
+            <p class="text-slate-400 text-sm font-medium mt-1">Kelola data dan status masa PKL mahasiswa/siswa </p>
         </div>
         
         <form action="{{ route('admin.peserta.index') }}" method="GET" class="flex items-center space-x-4">
@@ -52,10 +52,11 @@
                 @forelse($peserta as $index => $row)
                 <tr class="hover:bg-slate-50/50 transition">
                     <td class="px-8 py-5">{{ $index + 1 }}.</td>
-                    <td class="px-8 py-5 font-bold text-slate-800">{{ $row->name }}</td>
-                    <td class="px-8 py-5 font-medium text-blue-500">{{ $row->login_id }}</td>
-                    <td class="px-8 py-5">{{ $row->major_name }}</td>
-                    <td class="px-8 py-5">{{ $row->institution_name }}</td>
+                    {{-- PERBAIKAN: Akses via relasi --}}
+                    <td class="px-8 py-5 font-bold text-slate-800">{{ $row->user->name }}</td>
+                    <td class="px-8 py-5 font-medium text-blue-500">{{ $row->user->login_id }}</td>
+                    <td class="px-8 py-5">{{ $row->major->major_name }}</td>
+                    <td class="px-8 py-5">{{ $row->institution->institution_name }}</td>
                     <td class="px-8 py-5 text-slate-400">
                         {{ \Carbon\Carbon::parse($row->start_date)->format('d M y') }} - {{ \Carbon\Carbon::parse($row->end_date)->format('d M y') }}
                     </td>
@@ -65,14 +66,13 @@
                             @csrf
                             <input type="hidden" name="status" value="selesai">
                             <button type="button" 
-                                onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->name }}')"
+                                onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')"
                                 class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-600 hover:text-white transition">
                                 Selesai
                             </button>
                         </form>
                         @endif
                         
-                        {{-- TOMBOL EDIT --}}
                         <button type="button" 
                             onclick="openEditModal('{{ $row->internship_id }}')"
                             class="ml-2 text-slate-300 hover:text-blue-500 transition">
@@ -141,6 +141,7 @@
 </div>
 
 {{-- SCRIPTS --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     // 1. Fungsi Pop-up Konfirmasi Selesai PKL
     function confirmSelesai(id, nama) {
@@ -167,22 +168,21 @@
 
     // 2. Fungsi Modal Edit AJAX
     function openEditModal(id) {
-        // Tampilkan loading jika diperlukan, atau langsung fetch
         fetch(`/admin/peserta/edit/${id}`)
             .then(response => response.json())
             .then(data => {
-                // Isi field form
-                document.getElementById('edit_name').value = data.name;
-                document.getElementById('edit_login_id').value = data.login_id;
+                // PERBAIKAN: Karena data sekarang datang dari Model::with('user'), 
+                // data user ada di dalam objek 'user'
+                document.getElementById('edit_name').value = data.user.name;
+                document.getElementById('edit_login_id').value = data.user.login_id;
+                
                 document.getElementById('edit_institution_id').value = data.institution_id;
                 document.getElementById('edit_major_id').value = data.major_id;
                 document.getElementById('edit_start_date').value = data.start_date;
                 document.getElementById('edit_end_date').value = data.end_date;
                 
-                // Set action form ke URL update yang benar
                 document.getElementById('formEditPeserta').action = `/admin/peserta/update/${id}`;
                 
-                // Tampilkan Modal
                 const modal = document.getElementById('modalEdit');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -214,7 +214,6 @@
         });
     }
 
-    // Close modal when clicking outside
     window.onclick = function(event) {
         const modal = document.getElementById('modalEdit');
         if (event.target == modal) {

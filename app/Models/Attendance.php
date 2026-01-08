@@ -12,7 +12,6 @@ class Attendance extends Model
 
     protected $table = 'attendance';
     protected $primaryKey = 'attendance_id';
-    
     public $incrementing = false;
     protected $keyType = 'string';
 

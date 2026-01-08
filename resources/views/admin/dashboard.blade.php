@@ -2,7 +2,6 @@
 
 @section('content')
 
-<!-- ================= HEADER ================= -->
 <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-10">
     <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
         Selamat Datang Admin
@@ -18,7 +17,6 @@
     </div>
 </div>
 
-<!-- ================= STAT CARD ================= -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
     <div class="bg-[#D1F3FF] p-6 md:p-8 rounded-[2.5rem] relative border border-blue-200/50">
@@ -47,7 +45,6 @@
 
 </div>
 
-<!-- ================= TABLE ================= -->
 <div class="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm shadow-blue-900/5">
 
     <div class="py-6 md:py-8 text-center border-b border-slate-50">
@@ -65,12 +62,12 @@
                 <tr>
                     <th class="px-6 py-4">No</th>
                     <th class="px-6 py-4">Nama</th>
+                    <th class="px-8 py-5">No ID PKL</th> {{-- Tambahan agar lebih jelas --}}
                     <th class="px-6 py-4">Periode</th>
                     <th class="px-6 py-4">Tanggal</th>
                     <th class="px-6 py-4">Masuk</th>
                     <th class="px-6 py-4">Pulang</th>
                     <th class="px-6 py-4">Status</th>
-                    <th class="px-6 py-4 text-center">Aksi</th>
                 </tr>
             </thead>
 
@@ -78,28 +75,38 @@
                 @forelse($kehadiran as $index => $row)
                 <tr class="hover:bg-slate-50/50 transition">
                     <td class="px-6 py-4 text-slate-400">{{ $index + 1 }}</td>
-                    <td class="px-6 py-4 font-bold text-slate-700">{{ $row->name }}</td>
-                    <td class="px-6 py-4 text-slate-400 text-sm">
-                        {{ \Carbon\Carbon::parse($row->start_date)->format('M') }} -
-                        {{ \Carbon\Carbon::parse($row->end_date)->format('M y') }}
+                    
+                    {{-- PERBAIKAN: Akses Nama via Internship -> User --}}
+                    <td class="px-6 py-4 font-bold text-slate-700">
+                        {{ $row->internship->user->name }}
                     </td>
+
+                    {{-- PERBAIKAN: Akses Login ID --}}
+                    <td class="px-8 py-5 font-medium text-blue-500">
+                        {{ $row->internship->user->login_id }}
+                    </td>
+
+                    {{-- PERBAIKAN: Akses Periode via Internship --}}
+                    <td class="px-6 py-4 text-slate-400 text-sm">
+                        {{ \Carbon\Carbon::parse($row->internship->start_date)->format('M') }} -
+                        {{ \Carbon\Carbon::parse($row->internship->end_date)->format('M y') }}
+                    </td>
+
                     <td class="px-6 py-4 text-slate-500 text-sm">
                         {{ \Carbon\Carbon::parse($row->attendance_date)->format('d M Y') }}
                     </td>
+                    
                     <td class="px-6 py-4 font-bold">{{ substr($row->check_in_time, 0, 5) }}</td>
+                    
                     <td class="px-6 py-4 font-bold">
                         {{ $row->check_out_time ? substr($row->check_out_time, 0, 5) : '-' }}
                     </td>
+                    
                     <td class="px-6 py-4">
-                        <span class="{{ $row->status == 'hadir' ? 'bg-[#10B981]' : 'bg-[#FBBF24]' }}
+                        <span class="{{ $row->status == 'hadir' ? 'bg-[#10B981]' : ($row->status == 'izin' ? 'bg-blue-500' : 'bg-[#FBBF24]') }}
                                      text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase">
                             {{ $row->status }}
                         </span>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <a href="#" class="text-slate-400 hover:text-blue-500 text-sm font-semibold">
-                            Detail
-                        </a>
                     </td>
                 </tr>
                 @empty
@@ -114,10 +121,10 @@
     </div>
 
     <div class="p-6 md:p-8 flex justify-end bg-slate-50/20">
-        <button class="bg-[#E6F7FF] hover:bg-blue-100 text-blue-600 font-black
-                       px-10 py-3 rounded-2xl text-[10px] uppercase tracking-widest transition">
-            More Logs
-        </button>
+        <a href="{{ route('admin.absensi.index') }}" class="bg-[#E6F7FF] hover:bg-blue-100 text-blue-600 font-black
+                               px-10 py-3 rounded-2xl text-[10px] uppercase tracking-widest transition">
+            Lihat Semua Absensi
+        </a>
     </div>
 
 </div>
