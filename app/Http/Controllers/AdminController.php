@@ -13,12 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf; // Library untuk PDF
+use Barryvdh\DomPDF\Facade\Pdf; // Pastikan library dompdf sudah terinstal
 
 class AdminController extends Controller
 {
-    // --- DASHBOARD ---
-    
+    // --- 1. DASHBOARD OVERVIEW ---
     public function index()
     {
         $totalPeserta = Internship::count();
@@ -43,45 +42,102 @@ class AdminController extends Controller
         ));
     }
 
-    // --- ABSENSI HARIAN & PERIZINAN ---
+    // --- 2. MANAJEMEN PESERTA (INDEX, EDIT, UPDATE) ---
+    public function indexPeserta(Request $request)
+    {
+        $status = $request->get('status', 'aktif');
+        $search = $request->get('search');
 
+        $query = Internship::with(['user', 'major', 'institution'])
+            ->where('status', $status);
+
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('login_id', 'like', "%{$search}%");
+            });
+        }
+
+        $peserta = $query->latest()->get();
+        $institutions = Institution::all();
+        $majors = Major::all();
+
+        return view('admin.index_peserta', compact('peserta', 'status', 'institutions', 'majors'));
+    }
+
+    public function editPeserta($id)
+    {
+        // Mencari data peserta untuk kebutuhan AJAX Modal Edit
+        $peserta = Internship::with('user')->where('internship_id', $id)->firstOrFail();
+        return response()->json($peserta);
+    }
+
+    public function updatePeserta(Request $request, $id)
+    {
+        $request->validate([
+            'name'       => 'required|string|max:255',
+            'login_id'   => 'required|string',
+            'status'     => 'required|in:aktif,selesai',
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after:start_date',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $id) {
+                $peserta = Internship::where('internship_id', $id)->firstOrFail();
+                
+                // Update Tabel Internship
+                $peserta->update([
+                    'status'         => $request->status,
+                    'start_date'     => $request->start_date,
+                    'end_date'       => $request->end_date,
+                    'institution_id' => $request->institution_id ?? $peserta->institution_id,
+                    'major_id'       => $request->major_id ?? $peserta->major_id,
+                ]);
+
+                // Update Tabel Users
+                $peserta->user->update([
+                    'name'     => $request->name,
+                    'login_id' => $request->login_id,
+                ]);
+            });
+
+            return back()->with('success', 'Data peserta berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+        }
+    }
+
+    public function updateInternshipStatus(Request $request, $id)
+    {
+        // Digunakan untuk tombol cepat "Tandai Selesai"
+        Internship::where('internship_id', $id)->update(['status' => $request->status]);
+        return back()->with('success', 'Status peserta berhasil diubah menjadi ' . $request->status);
+    }
+
+    // --- 3. ABSENSI HARIAN & VERIFIKASI IZIN ---
     public function indexAbsensi(Request $request)
     {
         $tanggalDipilih = $request->get('tanggal', Carbon::now()->toDateString());
 
+        // Data Absensi Hari Ini
         $attendance = Attendance::with(['internship.user'])
             ->whereDate('attendance_date', $tanggalDipilih)
             ->get();
 
+        // Log perizinan yang sudah diproses
+        $leaveLogs = LeaveRequest::with(['internship.user'])
+            ->whereIn('status', ['disetujui', 'ditolak'])
+            ->latest('approved_at')
+            ->take(10)
+            ->get();
+
+        // Daftar permohonan yang masih menunggu
         $leaveRequests = LeaveRequest::with(['internship.user'])
             ->where('status', 'menunggu')
             ->get();
 
-        return view('admin.absensi', compact('attendance', 'leaveRequests', 'tanggalDipilih'));
-    }
-
-    public function updateAttendanceStatus(Request $request)
-    {
-        $request->validate([
-            'attendance_id' => 'required|exists:attendance,attendance_id',
-            'status' => 'required|in:hadir,izin,alpha',
-            'update_reason' => 'required|string|min:5',
-        ]);
-
-        try {
-            /** @var User $admin */
-            $admin = Auth::user();
-
-            Attendance::where('attendance_id', $request->attendance_id)->update([
-                'status' => $request->status,
-                'update_reason' => $request->update_reason,
-                'updated_by' => $admin->login_id,
-            ]);
-
-            return back()->with('success', 'Status absensi berhasil diperbarui.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memperbarui status: ' . $e->getMessage());
-        }
+        return view('admin.absensi', compact('attendance', 'leaveRequests', 'leaveLogs', 'tanggalDipilih'));
     }
 
     public function verifyLeave(Request $request, $id)
@@ -93,24 +149,21 @@ class AdminController extends Controller
             DB::transaction(function () use ($request, $id, $admin) {
                 $leave = LeaveRequest::findOrFail($id);
                 $leave->update([
-                    'status' => $request->action,
-                    'approved_by' => $admin->login_id,
+                    'status'      => $request->action,
+                    'approved_by' => $admin->id,
                     'approved_at' => now(),
                 ]);
 
                 if ($request->action === 'disetujui') {
                     Attendance::updateOrCreate(
+                        ['internship_id' => $leave->internship_id, 'attendance_date' => $leave->leave_date],
                         [
-                            'internship_id' => $leave->internship_id,
-                            'attendance_date' => $leave->leave_date,
-                        ],
-                        [
-                            'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
-                            'check_in_time' => '08:00:00',
-                            'check_in_photo' => 'leave_approved.png',
-                            'status' => 'izin',
-                            'update_reason' => 'Izin disetujui: ' . $leave->reason,
-                            'updated_by' => $admin->login_id,
+                            'attendance_id'   => 'ATT-' . strtoupper(substr(uniqid(), -7)),
+                            'check_in_time'   => '08:00:00',
+                            'check_in_photo'  => 'leave_approved.png',
+                            'status'          => 'izin',
+                            'update_reason'   => 'Izin disetujui: ' . $leave->reason,
+                            'updated_by'      => $admin->id,
                         ]
                     );
                 }
@@ -118,12 +171,11 @@ class AdminController extends Controller
 
             return back()->with('success', 'Permohonan izin berhasil diproses.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memproses izin: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses izin.');
         }
     }
 
-    // REKAP ABSENSI BULANAN & EXPORT 
-
+    // --- 4. REKAP ABSENSI & EXPORT PDF ---
     public function indexRekap(Request $request)
     {
         $bulan = $request->get('bulan', date('m'));
@@ -140,8 +192,7 @@ class AdminController extends Controller
 
         if ($search) {
             $query->whereHas('user', function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('login_id', 'like', "%{$search}%");
+                $q->where('name', 'like', "%{$search}%")->orWhere('login_id', 'like', "%{$search}%");
             });
         }
 
@@ -180,12 +231,7 @@ class AdminController extends Controller
             $namaInstansi = $inst ? $inst->institution_name : "Semua Instansi";
         }
 
-        // Penyesuaian nama bulan untuk judul PDF
-        if ($bulan === 'all') {
-            $namaBulan = "Seluruh Bulan";
-        } else {
-            $namaBulan = date('F', mktime(0, 0, 0, (int)$bulan, 1));
-        }
+        $namaBulan = ($bulan === 'all') ? "Seluruh Bulan" : date('F', mktime(0, 0, 0, (int)$bulan, 1));
 
         $pdf = Pdf::loadView('admin.pdf_rekap', compact('peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi'))
                   ->setPaper('a4', 'portrait');
@@ -193,6 +239,7 @@ class AdminController extends Controller
         return $pdf->download("Rekap_Absensi_{$namaBulan}_{$tahun}.pdf");
     }
 
+    // --- 5. STORE DATA (PENDAFTARAN PESERTA) ---
     public function store(Request $request)
     {
         $request->validate([
@@ -227,37 +274,7 @@ class AdminController extends Controller
 
             return back()->with('success', 'Peserta berhasil didaftarkan.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal mendaftarkan peserta: ' . $e->getMessage());
+            return back()->with('error', 'Gagal mendaftarkan peserta.');
         }
-    }
-
-    public function updateInternshipStatus(Request $request, $id)
-    {
-        Internship::where('internship_id', $id)->update(['status' => $request->status]);
-        return back()->with('success', 'Status peserta berhasil diperbarui.');
-    }
-
-    public function storeInstitution(Request $request)
-    {
-        $request->validate(['name' => 'required|unique:institution,institution_name']);
-
-        $institution = Institution::create([
-            'institution_id' => 'INST-' . strtoupper(substr(uniqid(), -5)),
-            'institution_name' => $request->name,
-        ]);
-
-        return response()->json($institution);
-    }
-
-    public function storeMajor(Request $request)
-    {
-        $request->validate(['name' => 'required|unique:major,major_name']);
-
-        $major = Major::create([
-            'major_id' => 'MJR-' . strtoupper(substr(uniqid(), -5)),
-            'major_name' => $request->name,
-        ]);
-
-        return response()->json($major);
     }
 }

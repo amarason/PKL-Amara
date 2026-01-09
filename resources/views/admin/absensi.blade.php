@@ -26,11 +26,11 @@
     {{-- Sub-header info tanggal --}}
     <div class="-mt-4">
         <span class="bg-blue-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100">
-            Menampilkan Data: {{ \Carbon\Carbon::parse($tanggalDipilih)->format('d M Y') }}
+            Menampilkan Data: {{ \Carbon\Carbon::parse($tanggalDipilih)->translatedFormat('d M Y') }}
         </span>
     </div>
 
-    {{-- TABEL 1: PERSETUJUAN IZIN --}}
+    {{-- TABEL 1: PERSETUJUAN IZIN (WAITING LIST) --}}
     @if($leaveRequests->count() > 0)
     <div class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
         <div class="flex items-center space-x-4 mb-8">
@@ -145,6 +145,66 @@
             </table>
         </div>
     </div>
+
+    {{-- TABEL 3: RIWAYAT LOG PERIZINAN (DISPROVED & APPROVED) --}}
+<div class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+    <div class="flex items-center space-x-4 mb-8">
+        <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center text-2xl">
+            <i class="bi bi-journal-check"></i>
+        </div>
+        <div>
+            <h3 class="text-xl font-black text-slate-800">Riwayat Log Perizinan</h3>
+            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Daftar izin yang telah diproses admin</p>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-[2rem] border border-slate-50">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                    <th class="px-6 py-4 rounded-l-2xl">Peserta</th>
+                    <th class="px-6 py-4">Alasan Izin</th>
+                    <th class="px-6 py-4">Status</th>
+                    <th class="px-6 py-4">Diproses Oleh</th>
+                    <th class="px-6 py-4 rounded-r-2xl text-right">Waktu Proses</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                @forelse($leaveLogs as $log)
+                <tr class="hover:bg-slate-50/50 transition-all">
+                    <td class="px-6 py-5">
+                        <p class="font-bold text-slate-800 text-sm">{{ $log->internship->user->name }}</p>
+                        <p class="text-[9px] text-slate-400 font-bold tracking-tighter">{{ $log->leave_date }}</p>
+                    </td>
+                    <td class="px-6 py-5 text-xs text-slate-500 italic max-w-xs truncate">
+                        "{{ $log->reason }}"
+                    </td>
+                    <td class="px-6 py-5">
+                        @if($log->status == 'disetujui')
+                            <span class="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-[10px] font-black uppercase">
+                                <i class="bi bi-check-circle-fill mr-1"></i> Disetujui
+                            </span>
+                        @else
+                            <span class="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-black uppercase">
+                                <i class="bi bi-x-circle-fill mr-1"></i> Ditolak
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-5">
+                        <p class="font-bold text-slate-700 text-xs">{{ $log->approved_by ?? 'System' }}</p>
+                    </td>
+                    <td class="px-6 py-5 text-right text-[10px] font-bold text-slate-400">
+                        {{ \Carbon\Carbon::parse($log->approved_at)->translatedFormat('d M Y, H:i') }}
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-slate-300 italic font-medium text-sm">Tidak ada riwayat perizinan yang diproses.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {{-- MODAL PHOTO BUKTI --}}
@@ -185,7 +245,7 @@
 {{-- MODAL KOREKSI STATUS --}}
 <div id="modalEditStatus" class="fixed inset-0 z-[999] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeEditStatusModal()"></div>
-    <div class="relative w-full max-w-md bg-white rounded-[3rem] overflow-hidden shadow-2xl transition-all duration-300">
+    <div class="relative w-full max-w-md bg-white rounded-[3rem] overflow-hidden shadow-2xl">
         <div class="p-8 border-b border-slate-50 flex justify-between items-center">
             <h4 class="text-xl font-black text-slate-800">Koreksi Absensi</h4>
             <button onclick="closeEditStatusModal()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 transition-all">
@@ -225,26 +285,17 @@
 </div>
 
 <script>
-    /**
-     * MODAL KOREKSI STATUS
-     */
     function openEditStatusModal(id, currentStatus, name) {
         document.getElementById('status_attendance_id').value = id;
         document.getElementById('status_user_name').innerText = name;
         document.getElementById('status_select').value = currentStatus;
-        
-        const modal = document.getElementById('modalEditStatus');
-        modal.classList.remove('hidden');
-        // Tambahkan trigger animasi jika diperlukan secara manual
+        document.getElementById('modalEditStatus').classList.remove('hidden');
     }
 
     function closeEditStatusModal() {
         document.getElementById('modalEditStatus').classList.add('hidden');
     }
 
-    /**
-     * MODAL FOTO BUKTI
-     */
     function openPhotoModal(checkIn, checkOut, name) {
         const modal = document.getElementById('modalPhoto');
         const imgIn = document.getElementById('img_check_in');
@@ -252,14 +303,13 @@
         const noIn = document.getElementById('no_check_in');
         const noOut = document.getElementById('no_check_out');
         document.getElementById('photo_user_name').innerText = name;
-        const baseUrl = window.location.origin + "/";
+        const baseUrl = window.location.origin + "/storage/";
 
         if (checkIn && checkIn !== 'leave_approved.png') {
             imgIn.src = baseUrl + checkIn; 
-            imgIn.classList.remove('hidden');
-            noIn.classList.add('hidden');
+            imgIn.classList.remove('hidden'); noIn.classList.add('hidden');
         } else if (checkIn === 'leave_approved.png') {
-            noIn.innerHTML = '<i class="bi bi-file-earmark-check text-4xl mb-2 text-blue-400"></i><span class="text-[10px] font-bold uppercase">Izin Disetujui Admin</span>';
+            noIn.innerHTML = '<i class="bi bi-file-earmark-check text-4xl mb-2 text-blue-400"></i><span class="text-[10px] font-bold uppercase">Izin Disetujui</span>';
             imgIn.classList.add('hidden'); noIn.classList.remove('hidden');
         } else {
             imgIn.classList.add('hidden'); noIn.classList.remove('hidden');
@@ -271,13 +321,9 @@
         } else {
             imgOut.classList.add('hidden'); noOut.classList.remove('hidden');
         }
-
         modal.classList.remove('hidden');
     }
 
-    /**
-     * KONFIRMASI VERIFIKASI IZIN (SweetAlert2)
-     */
     function confirmVerify(id, action, nama) {
         const isApprove = action === 'disetujui';
         Swal.fire({
@@ -288,11 +334,7 @@
             confirmButtonColor: isApprove ? '#10B981' : '#EF4444',
             confirmButtonText: isApprove ? 'Ya, Terima!' : 'Ya, Tolak!',
             cancelButtonText: 'Batal',
-            customClass: { 
-                popup: 'rounded-[2rem]', 
-                confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase text-xs tracking-widest', 
-                cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase text-xs tracking-widest' 
-            }
+            customClass: { popup: 'rounded-[2rem]' }
         }).then((result) => { 
             if (result.isConfirmed) { 
                 document.getElementById(isApprove ? `form-terima-${id}` : `form-tolak-${id}`).submit(); 
@@ -300,9 +342,6 @@
         });
     }
 
-    /**
-     * NOTIFIKASI SUKSES
-     */
     const successMsg = "{{ session('success') }}";
     if (successMsg) {
         Swal.fire({ 

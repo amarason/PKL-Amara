@@ -44,7 +44,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/major/quick-store', [AdminController::class, 'storeMajor'])->name('admin.major.store');
 
         // Fitur Update Status (Aktif ke Selesai)
-        Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateStatus'])->name('admin.peserta.updateStatus');
+        Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateInternshipStatus'])->name('admin.peserta.updateStatus');
 
         // Absensi & Perizinan
         Route::get('/absensi', [AdminController::class, 'indexAbsensi'])->name('admin.absensi.index');
