@@ -303,7 +303,7 @@
         const noIn = document.getElementById('no_check_in');
         const noOut = document.getElementById('no_check_out');
         document.getElementById('photo_user_name').innerText = name;
-        const baseUrl = window.location.origin + "/storage/";
+        const baseUrl = window.location.origin + "/";
 
         if (checkIn && checkIn !== 'leave_approved.png') {
             imgIn.src = baseUrl + checkIn; 
