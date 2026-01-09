@@ -13,13 +13,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf; // Library untuk PDF
 
 class AdminController extends Controller
 {
-    // =========================================================================
-    // DASHBOARD
-    // =========================================================================
-
+    // --- DASHBOARD ---
+    
     public function index()
     {
         $totalPeserta = Internship::count();
@@ -40,21 +39,12 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.dashboard', compact(
-            'totalPeserta',
-            'pesertaAktif',
-            'hadirHariIni',
-            'izinHariIni',
-            'kehadiran'
+            'totalPeserta', 'pesertaAktif', 'hadirHariIni', 'izinHariIni', 'kehadiran'
         ));
     }
 
-    // =========================================================================
-    // ABSENSI HARIAN & PERIZINAN
-    // =========================================================================
+    // --- ABSENSI HARIAN & PERIZINAN ---
 
-    /**
-     * Halaman Absensi Harian
-     */
     public function indexAbsensi(Request $request)
     {
         $tanggalDipilih = $request->get('tanggal', Carbon::now()->toDateString());
@@ -67,16 +57,9 @@ class AdminController extends Controller
             ->where('status', 'menunggu')
             ->get();
 
-        return view('admin.absensi', compact(
-            'attendance',
-            'leaveRequests',
-            'tanggalDipilih'
-        ));
+        return view('admin.absensi', compact('attendance', 'leaveRequests', 'tanggalDipilih'));
     }
 
-    /**
-     * KOREKSI STATUS ABSENSI
-     */
     public function updateAttendanceStatus(Request $request)
     {
         $request->validate([
@@ -89,12 +72,10 @@ class AdminController extends Controller
             /** @var User $admin */
             $admin = Auth::user();
 
-            $attendance = Attendance::where('attendance_id', $request->attendance_id)->firstOrFail();
-
-            $attendance->update([
+            Attendance::where('attendance_id', $request->attendance_id)->update([
                 'status' => $request->status,
                 'update_reason' => $request->update_reason,
-                'updated_by' => $admin->id, 
+                'updated_by' => $admin->login_id,
             ]);
 
             return back()->with('success', 'Status absensi berhasil diperbarui.');
@@ -103,31 +84,20 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * VERIFIKASI IZIN (SETUJUI / TOLAK)
-     */
     public function verifyLeave(Request $request, $id)
     {
-        $request->validate([
-            'action' => 'required|in:disetujui,ditolak'
-        ]);
-
-        /** @var User $admin */
+        $request->validate(['action' => 'required|in:disetujui,ditolak']);
         $admin = Auth::user();
 
         try {
             DB::transaction(function () use ($request, $id, $admin) {
-
                 $leave = LeaveRequest::findOrFail($id);
-
                 $leave->update([
                     'status' => $request->action,
-                    // PERBAIKAN: Gunakan $admin->id agar sesuai dengan tipe data INT di database
-                    'approved_by' => $admin->id,
+                    'approved_by' => $admin->login_id,
                     'approved_at' => now(),
                 ]);
 
-                // Jika disetujui → otomatis buat/update record absensi menjadi 'izin'
                 if ($request->action === 'disetujui') {
                     Attendance::updateOrCreate(
                         [
@@ -140,7 +110,7 @@ class AdminController extends Controller
                             'check_in_photo' => 'leave_approved.png',
                             'status' => 'izin',
                             'update_reason' => 'Izin disetujui: ' . $leave->reason,
-                            'updated_by' => $admin->id,
+                            'updated_by' => $admin->login_id,
                         ]
                     );
                 }
@@ -152,37 +122,75 @@ class AdminController extends Controller
         }
     }
 
-    // =========================================================================
-    // MANAJEMEN PESERTA PKL
-    // =========================================================================
+    // REKAP ABSENSI BULANAN & EXPORT 
 
-    public function indexPeserta(Request $request)
+    public function indexRekap(Request $request)
     {
-        $status = $request->get('status', 'aktif');
+        $bulan = $request->get('bulan', date('m'));
+        $tahun = $request->get('tahun', date('Y'));
         $search = $request->get('search');
+        $institution_id = $request->get('institution_id');
 
-        $query = Internship::with(['user', 'major', 'institution'])
-            ->where('status', $status);
+        $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
+            if ($bulan && $bulan !== 'all') {
+                $query->whereMonth('attendance_date', $bulan);
+            }
+            $query->whereYear('attendance_date', $tahun);
+        }]);
 
         if ($search) {
-            $query->whereHas('user', function ($q) use ($search) {
+            $query->whereHas('user', function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('login_id', 'like', "%{$search}%");
             });
         }
 
-        $peserta = $query->latest()->get();
+        if ($institution_id) {
+            $query->where('institution_id', $institution_id);
+        }
 
-        return view('admin.index_peserta', compact('peserta', 'status'));
+        $peserta = $query->where('status', 'aktif')->get();
+        $institutions = Institution::all();
+
+        return view('admin.rekap_absensi', compact('peserta', 'bulan', 'tahun', 'institutions'));
     }
 
-    public function updateInternshipStatus(Request $request, $id)
+    public function exportRekapPdf(Request $request)
     {
-        Internship::where('internship_id', $id)->update([
-            'status' => $request->status
-        ]);
+        $bulan = $request->get('bulan', date('m'));
+        $tahun = $request->get('tahun', date('Y'));
+        $institution_id = $request->get('institution_id');
 
-        return back()->with('success', 'Status peserta berhasil diperbarui.');
+        $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
+            if ($bulan && $bulan !== 'all') {
+                $query->whereMonth('attendance_date', $bulan);
+            }
+            $query->whereYear('attendance_date', $tahun);
+        }]);
+
+        if ($institution_id) {
+            $query->where('institution_id', $institution_id);
+        }
+
+        $peserta = $query->where('status', 'aktif')->get();
+        
+        $namaInstansi = "Semua Instansi";
+        if($institution_id) {
+            $inst = Institution::where('institution_id', $institution_id)->first();
+            $namaInstansi = $inst ? $inst->institution_name : "Semua Instansi";
+        }
+
+        // Penyesuaian nama bulan untuk judul PDF
+        if ($bulan === 'all') {
+            $namaBulan = "Seluruh Bulan";
+        } else {
+            $namaBulan = date('F', mktime(0, 0, 0, (int)$bulan, 1));
+        }
+
+        $pdf = Pdf::loadView('admin.pdf_rekap', compact('peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi'))
+                  ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Rekap_Absensi_{$namaBulan}_{$tahun}.pdf");
     }
 
     public function store(Request $request)
@@ -223,15 +231,15 @@ class AdminController extends Controller
         }
     }
 
-    // =========================================================================
-    // DATA MASTER
-    // =========================================================================
+    public function updateInternshipStatus(Request $request, $id)
+    {
+        Internship::where('internship_id', $id)->update(['status' => $request->status]);
+        return back()->with('success', 'Status peserta berhasil diperbarui.');
+    }
 
     public function storeInstitution(Request $request)
     {
-        $request->validate([
-            'name' => 'required|unique:institution,institution_name'
-        ]);
+        $request->validate(['name' => 'required|unique:institution,institution_name']);
 
         $institution = Institution::create([
             'institution_id' => 'INST-' . strtoupper(substr(uniqid(), -5)),
@@ -243,9 +251,7 @@ class AdminController extends Controller
 
     public function storeMajor(Request $request)
     {
-        $request->validate([
-            'name' => 'required|unique:major,major_name'
-        ]);
+        $request->validate(['name' => 'required|unique:major,major_name']);
 
         $major = Major::create([
             'major_id' => 'MJR-' . strtoupper(substr(uniqid(), -5)),

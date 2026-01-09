@@ -21,7 +21,7 @@
             <div class="pt-12 pb-6 flex flex-col items-center">
                 <img src="{{ asset('uploads/img/logo-pln.png') }}" alt="Logo PLN" class="h-24 w-auto mb-4 object-contain">
                 <h1 class="text-3xl font-extrabold pln-blue tracking-tight">SIPRAKER</h1>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Sistem Presensi PKL PLN</p>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Sistem Presensi Praktik Kerja</p>
             </div>
 
             <div class="p-10 pt-4">

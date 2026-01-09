@@ -68,7 +68,7 @@
                 <i class="bi bi-calendar3 mr-4"></i> Absensi Harian
             </a>
 
-            <a href="#"
+            <a href="{{ route('admin.rekap.index') }}"
             class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200
             {{ Request::is('admin/rekap*') ? 'text-blue-500 font-bold bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-file-earmark-text mr-4"></i> Rekap Laporan
