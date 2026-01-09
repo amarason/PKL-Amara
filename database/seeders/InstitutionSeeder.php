@@ -12,7 +12,7 @@ class InstitutionSeeder extends Seeder
         DB::table('institution')->insert([
             [
                 'institution_id' => 'INST001',
-                'institution_name' => 'Universitas ABC',
+                'institution_name' => 'UNIVERSITAS ABC',
             ],
         ]);
     }

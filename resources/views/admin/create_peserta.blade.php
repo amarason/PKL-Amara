@@ -125,9 +125,14 @@
 <div id="quickModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl transform transition-all">
         <h4 id="modalTitle" class="text-xl font-black text-slate-800 mb-2">Tambah Data</h4>
-        <p class="text-slate-400 text-sm mb-6">Masukkan nama baru untuk didaftarkan ke sistem.</p>
+        <p id="modalDescription" class="text-slate-400 text-sm mb-6">Masukkan nama baru untuk didaftarkan ke sistem.</p>
         <input type="hidden" id="modalTarget">
-        <input type="text" id="newNameInput" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700 mb-6" placeholder="Ketik nama di sini...">
+        
+        {{-- INPUT DENGAN ID newNameInput --}}
+        <input type="text" id="newNameInput" 
+               class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700 mb-6" 
+               placeholder=""> {{-- Placeholder akan diisi oleh JS --}}
+               
         <div class="flex space-x-3">
             <button type="button" onclick="closeModal()" class="flex-1 py-4 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Batal</button>
             <button type="button" onclick="saveNewData()" class="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-blue-100">Simpan</button>
@@ -152,15 +157,31 @@
 
 {{-- SCRIPTS --}}
 <script>
-    // --- Logika Modal Tambah Cepat ---
+    // --- Logika Modal Tambah ---
     function openModal(type) {
         const modal = document.getElementById('quickModal');
         const title = document.getElementById('modalTitle');
+        const desc = document.getElementById('modalDescription');
         const target = document.getElementById('modalTarget');
+        const input = document.getElementById('newNameInput'); 
+        
         target.value = type;
-        title.innerText = type === 'institution' ? 'Tambah Instansi Baru' : 'Tambah Jurusan Baru';
+        
+        if (type === 'institution') {
+            title.innerText = 'Tambah Instansi Baru';
+            desc.innerText = 'Daftarkan nama sekolah atau universitas baru.';
+            input.placeholder = 'Contoh: UNIVERSITAS AAA';
+        } else {
+            title.innerText = 'Tambah Jurusan Baru';
+            desc.innerText = 'Daftarkan program studi atau jurusan baru.';
+            input.placeholder = 'Contoh: Teknik Lingkungan'; 
+        }
+        
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        
+        // Auto focus ke input saat modal terbuka
+        setTimeout(() => input.focus(), 100);
     }
 
     function closeModal() {

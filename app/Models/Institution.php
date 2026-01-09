@@ -10,9 +10,10 @@ class Institution extends Model
     protected $primaryKey = 'institution_id';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
-        'institution_id', 
+        'institution_id',
         'institution_name',
     ];
 }

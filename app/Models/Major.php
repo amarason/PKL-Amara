@@ -10,6 +10,7 @@ class Major extends Model
     protected $primaryKey = 'major_id';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
         'major_id',
