@@ -1,22 +1,18 @@
 @extends('layouts.admin')
 
 @section('content')
-
 <div class="flex flex-col space-y-8">
     {{-- Header & Search --}}
     <div class="flex justify-between items-center">
         <div>
             <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Manajemen Peserta</h2>
-            <p class="text-slate-400 text-sm font-medium mt-1">Kelola data dan status masa PKL mahasiswa/siswa </p>
+            <p class="text-slate-400 text-sm font-medium mt-1">Kelola data dan status masa PKL mahasiswa/siswa</p>
         </div>
-        
         <form action="{{ route('admin.peserta.index') }}" method="GET" class="flex items-center space-x-4">
             <input type="hidden" name="status" value="{{ $status }}">
             <div class="relative w-80">
                 <i class="bi bi-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" name="search" value="{{ request('search') }}" 
-                    class="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-blue-50 transition shadow-sm" 
-                    placeholder="Cari Nama atau ID...">
+                <input type="text" name="search" value="{{ request('search') }}" class="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-blue-50 transition shadow-sm" placeholder="Cari Nama atau ID...">
             </div>
             <button type="submit" class="bg-blue-600 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition uppercase text-[10px] tracking-widest">Cari</button>
         </form>
@@ -24,14 +20,8 @@
 
     {{-- Filter Tab --}}
     <div class="flex space-x-2 p-1 bg-slate-100 w-fit rounded-2xl">
-        <a href="{{ route('admin.peserta.index', ['status' => 'aktif']) }}" 
-            class="px-8 py-3 rounded-xl text-xs font-bold transition {{ $status == 'aktif' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">
-            Peserta Aktif
-        </a>
-        <a href="{{ route('admin.peserta.index', ['status' => 'selesai']) }}" 
-            class="px-8 py-3 rounded-xl text-xs font-bold transition {{ $status == 'selesai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">
-            Peserta Selesai
-        </a>
+        <a href="{{ route('admin.peserta.index', ['status' => 'aktif']) }}" class="px-8 py-3 rounded-xl text-xs font-bold transition {{ $status == 'aktif' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">Peserta Aktif</a>
+        <a href="{{ route('admin.peserta.index', ['status' => 'selesai']) }}" class="px-8 py-3 rounded-xl text-xs font-bold transition {{ $status == 'selesai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">Peserta Selesai</a>
     </div>
 
     {{-- Table Data --}}
@@ -52,30 +42,20 @@
                 @forelse($peserta as $index => $row)
                 <tr class="hover:bg-slate-50/50 transition">
                     <td class="px-8 py-5">{{ $index + 1 }}.</td>
-                    {{-- PERBAIKAN: Akses via relasi --}}
                     <td class="px-8 py-5 font-bold text-slate-800">{{ $row->user->name }}</td>
                     <td class="px-8 py-5 font-medium text-blue-500">{{ $row->user->login_id }}</td>
                     <td class="px-8 py-5">{{ $row->major->major_name }}</td>
                     <td class="px-8 py-5">{{ $row->institution->institution_name }}</td>
-                    <td class="px-8 py-5 text-slate-400">
-                        {{ \Carbon\Carbon::parse($row->start_date)->format('d M y') }} - {{ \Carbon\Carbon::parse($row->end_date)->format('d M y') }}
-                    </td>
+                    <td class="px-8 py-5 text-slate-400">{{ \Carbon\Carbon::parse($row->start_date)->format('d M y') }} - {{ \Carbon\Carbon::parse($row->end_date)->format('d M y') }}</td>
                     <td class="px-8 py-5 text-center">
                         @if($status == 'aktif')
                         <form id="form-selesai-{{ $row->internship_id }}" action="{{ route('admin.peserta.updateStatus', $row->internship_id) }}" method="POST" class="inline">
                             @csrf
                             <input type="hidden" name="status" value="selesai">
-                            <button type="button" 
-                                onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')"
-                                class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-600 hover:text-white transition">
-                                Selesai
-                            </button>
+                            <button type="button" onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')" class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-600 hover:text-white transition">Selesai</button>
                         </form>
                         @endif
-                        
-                        <button type="button" 
-                            onclick="openEditModal('{{ $row->internship_id }}')"
-                            class="ml-2 text-slate-300 hover:text-blue-500 transition">
+                        <button type="button" onclick="openEditModal('{{ $row->internship_id }}')" class="ml-2 text-slate-300 hover:text-blue-500 transition">
                             <i class="bi bi-pencil-square text-lg"></i>
                         </button>
                     </td>
@@ -95,7 +75,6 @@
             <h3 class="text-2xl font-black text-slate-800">Edit Data Peserta</h3>
             <button onclick="closeEditModal()" class="text-slate-400 hover:text-red-500 text-2xl transition"><i class="bi bi-x-lg"></i></button>
         </div>
-
         <form id="formEditPeserta" method="POST">
             @csrf
             <div class="grid grid-cols-2 gap-6">
@@ -132,18 +111,13 @@
                     <input type="date" name="end_date" id="edit_end_date" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-100">
                 </div>
             </div>
-            
-            <button type="submit" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-100 transition active:scale-95 hover:bg-blue-700">
-                Simpan Perubahan
-            </button>
+            <button type="submit" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-100 transition active:scale-95 hover:bg-blue-700">Simpan Perubahan</button>
         </form>
     </div>
 </div>
 
-{{-- SCRIPTS --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // 1. Fungsi Pop-up Konfirmasi Selesai PKL
     function confirmSelesai(id, nama) {
         Swal.fire({
             title: 'Konfirmasi Selesai',
@@ -166,23 +140,17 @@
         })
     }
 
-    // 2. Fungsi Modal Edit AJAX
     function openEditModal(id) {
         fetch(`/admin/peserta/edit/${id}`)
             .then(response => response.json())
             .then(data => {
-                // PERBAIKAN: Karena data sekarang datang dari Model::with('user'), 
-                // data user ada di dalam objek 'user'
                 document.getElementById('edit_name').value = data.user.name;
                 document.getElementById('edit_login_id').value = data.user.login_id;
-                
                 document.getElementById('edit_institution_id').value = data.institution_id;
                 document.getElementById('edit_major_id').value = data.major_id;
                 document.getElementById('edit_start_date').value = data.start_date;
                 document.getElementById('edit_end_date').value = data.end_date;
-                
                 document.getElementById('formEditPeserta').action = `/admin/peserta/update/${id}`;
-                
                 const modal = document.getElementById('modalEdit');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -199,7 +167,6 @@
         modal.classList.remove('flex');
     }
 
-    // 3. Notifikasi Sukses Otomatis
     const successMsg = "{{ session('success') }}";
     if (successMsg) {
         Swal.fire({
@@ -208,18 +175,13 @@
             icon: 'success',
             timer: 3000,
             showConfirmButton: false,
-            customClass: {
-                popup: 'rounded-[2rem]'
-            }
+            customClass: { popup: 'rounded-[2rem]' }
         });
     }
 
     window.onclick = function(event) {
         const modal = document.getElementById('modalEdit');
-        if (event.target == modal) {
-            closeEditModal();
-        }
+        if (event.target == modal) { closeEditModal(); }
     }
 </script>
-
 @endsection
