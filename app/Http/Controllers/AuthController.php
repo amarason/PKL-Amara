@@ -39,7 +39,12 @@ class AuthController extends Controller
         if ($user->role_id === 'ROLE_ADMIN') {
             return redirect()->intended('/admin/dashboard');
         }
-        return redirect()->intended('/dashboard');
+
+        if ($user->role_id === 'ROLE_PESERTA') {
+            return redirect()->intended('/user/dashboard');
+        }
+        
+        return redirect()->intended('/');
     }
 
     public function logout(Request $request)
