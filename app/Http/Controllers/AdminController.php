@@ -183,21 +183,33 @@ class AdminController extends Controller
 
     public function verifyLeave(Request $request, $id)
     {
-        $request->validate(['action' => 'required|in:disetujui,ditolak']);
-        $admin = Auth::user();
+        $request->validate([
+            'action' => 'required|in:disetujui,ditolak'
+        ]);
 
         try {
-            DB::transaction(function () use ($request, $id, $admin) {
-                $leave = LeaveRequest::findOrFail($id);
+            $leave = LeaveRequest::where('leave_id', $id)->first();
+
+            if (!$leave) {
+                return back()->with('error', 'Data pengajuan izin tidak ditemukan di sistem.');
+            }
+
+            $admin = Auth::user();
+
+            DB::transaction(function () use ($request, $leave, $admin) {
+                // 3. Update data izin
                 $leave->update([
                     'status' => $request->action,
-                    'approved_by' => $admin->id,
+                    'approved_by' => $admin->login_id, 
                     'approved_at' => now(),
                 ]);
 
                 if ($request->action === 'disetujui') {
                     Attendance::updateOrCreate(
-                        ['internship_id' => $leave->internship_id, 'attendance_date' => $leave->leave_date],
+                        [
+                            'internship_id' => $leave->internship_id,
+                            'attendance_date' => $leave->leave_date,
+                        ],
                         [
                             'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
                             'check_in_time' => '08:00:00',
@@ -210,10 +222,18 @@ class AdminController extends Controller
                 }
             });
 
-            return back()->with('success', 'Permohonan izin berhasil diproses.');
+            return back()->with('success', 'Status izin berhasil diperbarui menjadi ' . $request->action);
+
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memproses izin.');
+            // Ini akan memunculkan pesan error asli jika ada masalah SQL
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+
+    public function checkNotification()
+    {
+        $count = \App\Models\LeaveRequest::where('status', 'menunggu')->count();
+        return response()->json(['count' => $count]);
     }
 
     // --- 4. REKAP & PDF ---

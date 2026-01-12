@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/absensi', [AdminController::class, 'indexAbsensi'])->name('admin.absensi.index');
         Route::post('/izin/verifikasi/{id}', [AdminController::class, 'verifyLeave'])->name('admin.izin.verify');
         Route::post('/absensi/update-status', [AdminController::class, 'updateAttendanceStatus'])->name('admin.absensi.updateStatus');
+        Route::get('/admin/check-notifications', [AdminController::class, 'checkNotification'])->name('admin.notification.check');
 
         // Rekap Absensi Bulanan
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
