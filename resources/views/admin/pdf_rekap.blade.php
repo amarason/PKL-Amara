@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Rekap Absensi - {{ $namaBulan }} {{ $tahun }}</title>
-    <link rel="stylesheet" href="{{ public_path('css/pdf-style.css') }}">
+
+    <link rel="stylesheet" href="{{ public_path('css/laporan.css') }}">
 </head>
 <body>
     <div class="header">
@@ -50,18 +51,21 @@
         <div class="ttd-container">
             <p>Semarang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
             <p>Admin Pembimbing,</p>
-            <div class="space-ttd"></div>
-            <p class="text-bold"><u>( {{ auth()->user()->name }} )</u></p>
-            <p>ID: {{ auth()->user()->login_id }}</p>
+            
+            <div class="qrcode-box">
+                {{-- QR CODE DITAMPILKAN DISINI --}}
+                <img src="data:image/svg+xml;base64,{{ $qrcode }}" width="80">
+            </div>
+            
+            <p class="text-bold"><u>{{ auth()->user()->name }}</u></p>
+            <p style="font-size: 10px;">NIP/ID: {{ auth()->user()->login_id }}</p>
         </div>
         <div style="clear: both;"></div>
         
         <div class="info-cetak">
-           @php
-                \Carbon\Carbon::setLocale('id');
-            @endphp
-            * Dokumen ini diterbitkan oleh Sistem Absensi PKL pada {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}.<br>
-            * Data yang ditampilkan sesuai dengan catatan kehadiran pada periode yang dipilih.
+            @php \Carbon\Carbon::setLocale('id'); @endphp
+            * Scan QR Code untuk verifikasi keaslian dokumen secara digital.<br>
+            * Dokumen ini diterbitkan oleh Sistem Absensi PKL pada {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}.
         </div>
     </div>
 </body>

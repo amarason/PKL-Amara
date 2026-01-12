@@ -8,15 +8,27 @@ use App\Models\Attendance;
 use App\Models\Institution;
 use App\Models\Major;
 use App\Models\LeaveRequest;
+use App\Services\IdGeneratorService; // Import Service Baru
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt; 
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AdminController extends Controller
 {
+    protected $idService;
+
+    // --- CONSTRUCTOR ---
+    // Inject Service melalui Constructor agar bisa digunakan di semua method
+    public function __construct(IdGeneratorService $idService)
+    {
+        $this->idService = $idService;
+    }
+
     // --- 1. DASHBOARD ---
     public function index()
     {
@@ -60,7 +72,6 @@ class AdminController extends Controller
         }
 
         $peserta = $query->latest()->get();
-        // Menarik data untuk modal edit (jika ditaruh di halaman index)
         $institutions = Institution::all();
         $majors = Major::all();
 
@@ -72,7 +83,6 @@ class AdminController extends Controller
         $institutions = Institution::all();
         $majors = Major::all();
         
-        // Memanggil file create_peserta.blade.php Anda
         return view('admin.create_peserta', compact('institutions', 'majors'));
     }
 
@@ -89,6 +99,11 @@ class AdminController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
+                // 1. Deteksi Strata dari Nama Instansi untuk ID Internship
+                $inst = Institution::where('institution_id', $request->institution_id)->first();
+                $strata = str_contains(strtoupper($inst->institution_name), 'SMK') ? 'SMK' : 'S1';
+
+                // 2. Buat Akun User
                 $user = User::create([
                     'login_id' => $request->login_id,
                     'name' => $request->name,
@@ -97,8 +112,9 @@ class AdminController extends Controller
                     'is_active' => 1,
                 ]);
 
+                // 3. Buat Data Internship dengan Service IdGenerator
                 Internship::create([
-                    'internship_id' => 'INT-' . strtoupper(substr(uniqid(), -7)),
+                    'internship_id' => $this->idService->generateInternshipId($strata),
                     'user_id' => $user->id,
                     'institution_id' => $request->institution_id,
                     'major_id' => $request->major_id,
@@ -117,6 +133,10 @@ class AdminController extends Controller
     public function editPeserta($id)
     {
         $peserta = Internship::with('user')->where('internship_id', $id)->firstOrFail();
+        if (!$peserta) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+        
         return response()->json($peserta);
     }
 
@@ -183,21 +203,15 @@ class AdminController extends Controller
 
     public function verifyLeave(Request $request, $id)
     {
-        $request->validate([
-            'action' => 'required|in:disetujui,ditolak'
-        ]);
+        $request->validate(['action' => 'required|in:disetujui,ditolak']);
 
         try {
             $leave = LeaveRequest::where('leave_id', $id)->first();
-
-            if (!$leave) {
-                return back()->with('error', 'Data pengajuan izin tidak ditemukan di sistem.');
-            }
+            if (!$leave) return back()->with('error', 'Data tidak ditemukan.');
 
             $admin = Auth::user();
 
             DB::transaction(function () use ($request, $leave, $admin) {
-                // 3. Update data izin
                 $leave->update([
                     'status' => $request->action,
                     'approved_by' => $admin->login_id, 
@@ -206,10 +220,7 @@ class AdminController extends Controller
 
                 if ($request->action === 'disetujui') {
                     Attendance::updateOrCreate(
-                        [
-                            'internship_id' => $leave->internship_id,
-                            'attendance_date' => $leave->leave_date,
-                        ],
+                        ['internship_id' => $leave->internship_id, 'attendance_date' => $leave->leave_date],
                         [
                             'attendance_id' => 'ATT-' . strtoupper(substr(uniqid(), -7)),
                             'check_in_time' => '08:00:00',
@@ -222,17 +233,15 @@ class AdminController extends Controller
                 }
             });
 
-            return back()->with('success', 'Status izin berhasil diperbarui menjadi ' . $request->action);
-
+            return back()->with('success', 'Status berhasil diperbarui.');
         } catch (\Exception $e) {
-            // Ini akan memunculkan pesan error asli jika ada masalah SQL
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
     public function checkNotification()
     {
-        $count = \App\Models\LeaveRequest::where('status', 'menunggu')->count();
+        $count = LeaveRequest::where('status', 'menunggu')->count();
         return response()->json(['count' => $count]);
     }
 
@@ -246,9 +255,7 @@ class AdminController extends Controller
         $institution_id = $request->get('institution_id');
 
         $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
-            if ($bulan && $bulan !== 'all') {
-                $query->whereMonth('attendance_date', $bulan);
-            }
+            if ($bulan && $bulan !== 'all') $query->whereMonth('attendance_date', $bulan);
             $query->whereYear('attendance_date', $tahun);
         }]);
 
@@ -257,10 +264,7 @@ class AdminController extends Controller
                 $q->where('name', 'like', "%{$search}%")->orWhere('login_id', 'like', "%{$search}%");
             });
         }
-
-        if ($institution_id) {
-            $query->where('institution_id', $institution_id);
-        }
+        if ($institution_id) $query->where('institution_id', $institution_id);
 
         $peserta = $query->where('status', 'aktif')->get();
         $institutions = Institution::all();
@@ -275,42 +279,84 @@ class AdminController extends Controller
         $institution_id = $request->get('institution_id');
 
         $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
-            if ($bulan && $bulan !== 'all') {
-                $query->whereMonth('attendance_date', $bulan);
-            }
+            if ($bulan && $bulan !== 'all') $query->whereMonth('attendance_date', $bulan);
             $query->whereYear('attendance_date', $tahun);
         }]);
 
+        if ($institution_id) $query->where('institution_id', $institution_id);
+
         $peserta = $query->where('status', 'aktif')->get();
+
+        $namaInstansi = "Semua Instansi";
+        if ($institution_id) {
+            $inst = Institution::where('institution_id', $institution_id)->first();
+            $namaInstansi = $inst ? $inst->institution_name : "Semua Instansi";
+        }
+
         $namaBulan = ($bulan === 'all') ? "Seluruh Bulan" : date('F', mktime(0, 0, 0, (int)$bulan, 1));
 
-        $pdf = Pdf::loadView('admin.pdf_rekap', compact('peserta', 'bulan', 'tahun', 'namaBulan'))
-                  ->setPaper('a4', 'portrait');
+        // URL Verifikasi untuk QR Code (Menggunakan Hash Encrypted)
+        $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun);
+        $verifyUrl = route('report.verify', ['hash' => $hash]);
+        
+        $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
+
+        $pdf = Pdf::loadView('admin.pdf_rekap', compact(
+            'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode'
+        ))->setPaper('a4', 'portrait');
 
         return $pdf->download("Rekap_Absensi_{$namaBulan}_{$tahun}.pdf");
     }
 
-    // --- 5. TAMBAH CEPAT (AJAX) ---
+    // --- 5. VERIFIKASI PUBLIK (QR SCAN) ---
+
+    public function verifyReport($hash)
+    {
+        try {
+            $decrypted = Crypt::decryptString($hash);
+            [$id, $bulan, $tahun] = explode('|', $decrypted);
+
+            $peserta = Internship::with(['user', 'institution'])->where('internship_id', $id)->first();
+
+            if (!$peserta) return "Dokumen Tidak Dikenali oleh Sistem SIPRAKER.";
+
+            return view('public.verify_report', [
+                'nama' => $peserta->user->name,
+                'instansi' => $peserta->institution->institution_name,
+                'periode_mulai' => $peserta->start_date,
+                'periode_selesai' => $peserta->end_date,
+                'laporan_bulan' => Carbon::create()->month($bulan)->format('F'),
+                'laporan_tahun' => $tahun,
+                'verified_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            return "Link Verifikasi Kadaluarsa atau Tidak Valid.";
+        }
+    }
+
+    // --- 6. TAMBAH CEPAT (AJAX) DENGAN ID GENERATOR ---
 
     public function storeInstitution(Request $request)
     {
         $request->validate(['name' => 'required|unique:institution,institution_name']);
+        
         $institution = Institution::create([
-            'institution_id' => 'INST-' . strtoupper(substr(uniqid(), -5)),
+            'institution_id' => $this->idService->generateInstitutionId(), // Menggunakan Service
             'institution_name' => $request->name,
         ]);
-        // Return id & name agar sinkron dengan JavaScript di create_peserta.blade.php
+        
         return response()->json(['id' => $institution->institution_id, 'name' => $institution->institution_name]);
     }
 
     public function storeMajor(Request $request)
     {
         $request->validate(['name' => 'required|unique:major,major_name']);
+        
         $major = Major::create([
-            'major_id' => 'MJR-' . strtoupper(substr(uniqid(), -5)),
+            'major_id' => $this->idService->generateMajorId(), // Menggunakan Service
             'major_name' => $request->name,
         ]);
-        // Return id & name agar sinkron dengan JavaScript di create_peserta.blade.php
+        
         return response()->json(['id' => $major->major_id, 'name' => $major->major_name]);
     }
 }

@@ -3,26 +3,37 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\Internship;
+use App\Models\Institution;
+use App\Services\IdGeneratorService;
 
 class InternshipSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = DB::table('users')->where('login_id', 'IP26/S1/001')->first();
+        $idService = new IdGeneratorService();
+        
+        // Ambil user peserta pertama
+        $user = User::where('login_id', 'IP26/S1/001')->first();
+        // Ambil instansi pertama (UNIVERSITAS ABC)
+        $inst = Institution::first(); 
+        
+        if ($user && $inst) {
+            // Deteksi strata berdasarkan nama instansi
+            $strata = str_contains(strtoupper($inst->institution_name), 'SMK') ? 'SMK' : 'S1';
 
-        DB::table('internship')->insert([
-            [
-                'internship_id' => 'INT001',
+            Internship::create([
+                'internship_id' => $idService->generateInternshipId($strata),
                 'user_id' => $user->id,
-                'institution_id' => 'INST001',
-                'major_id' => 'Tekdus',
+                'institution_id' => $inst->institution_id,
+                'major_id' => 'MJR-001', // Merujuk ke Teknik Industri
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-03-31',
                 'status' => 'aktif',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-        ]);
+            ]);
+        }
     }
 }
