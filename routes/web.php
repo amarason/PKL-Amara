@@ -34,32 +34,46 @@ Route::middleware(['auth'])->group(function () {
         // Logic Simpan Peserta (Users & Internship)
         Route::post('/peserta/simpan', [AdminController::class, 'store'])->name('admin.peserta.store');
 
-        // --- RUTE EDIT & UPDATE PESERTA (BARU) ---
-        // Digunakan untuk mengambil data via AJAX (Edit) dan menyimpan perubahan (Update)
-        Route::get('/peserta/edit/{id}', [AdminController::class, 'editPeserta'])->name('admin.peserta.edit');
-        Route::post('/peserta/update/{id}', [AdminController::class, 'updatePeserta'])->name('admin.peserta.update');
+        // --- PERBAIKAN RUTE EDIT & UPDATE (Support ID dengan /) ---
+        // Penambahan ->where('id', '.*') memungkinkan Laravel menerima ID seperti PKL/S1/001
+        Route::get('/peserta/edit/{id}', [AdminController::class, 'editPeserta'])
+            ->name('admin.peserta.edit')
+            ->where('id', '.*');
+            
+        Route::post('/peserta/update/{id}', [AdminController::class, 'updatePeserta'])
+            ->name('admin.peserta.update')
+            ->where('id', '.*');
+
+        // --- LOGIC UPDATE STATUS (Support ID dengan /) ---
+        Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateStatus'])
+            ->name('admin.peserta.updateStatus')
+            ->where('id', '.*');
 
         // Logic Tambah Cepat (AJAX untuk Instansi & Jurusan) 
         Route::post('/institution/quick-store', [AdminController::class, 'storeInstitution'])->name('admin.institution.store');
         Route::post('/major/quick-store', [AdminController::class, 'storeMajor'])->name('admin.major.store');
 
-        // Fitur Update Status (Aktif ke Selesai)
-        Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateInternshipStatus'])->name('admin.peserta.updateStatus');
-
         // Absensi & Perizinan
         Route::get('/absensi', [AdminController::class, 'indexAbsensi'])->name('admin.absensi.index');
         Route::post('/izin/verifikasi/{id}', [AdminController::class, 'verifyLeave'])->name('admin.izin.verify');
         Route::post('/absensi/update-status', [AdminController::class, 'updateAttendanceStatus'])->name('admin.absensi.updateStatus');
-        Route::get('/admin/check-notifications', [AdminController::class, 'checkNotification'])->name('admin.notification.check');
+        
+        // Notifikasi (Disesuaikan jalurnya agar konsisten)
+        Route::get('/check-notifications', [AdminController::class, 'checkNotification'])->name('admin.notification.check');
 
         // Rekap Absensi Bulanan
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
     });
 
+    // --- RUTE VERIFIKASI PUBLIK (Bisa diakses tanpa login agar bisa scan QR) ---
+    // Dipindah ke luar middleware auth atau biarkan di sini jika hanya admin yang boleh scan
+    // Jika ingin dosen/sekolah bisa scan tanpa login, pindahkan ke paling bawah (luar grup auth)
+    Route::get('/verifikasi/laporan/{hash}', [AdminController::class, 'verifyReport'])->name('report.verify');
+
     // --- RUTE KHUSUS PESERTA PKL ---
     Route::middleware(['role:ROLE_PESERTA'])->group(function () {
-        Route::get('/dashboard', function () { 
+        Route::get('/peserta/dashboard', function () { 
             return "Dashboard Peserta PKL (Halaman Absensi)"; 
         })->name('user.dashboard');
     });

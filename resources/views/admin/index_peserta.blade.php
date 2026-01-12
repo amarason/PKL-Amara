@@ -202,8 +202,14 @@
     }
 
     function openEditModal(id) {
-        fetch(`/admin/peserta/edit/${id}`)
-            .then(response => response.json())
+        // encodeURIComponent akan mengubah 'PKL/S1/001' menjadi 'PKL%2FS1%2F001'
+        const encodedId = encodeURIComponent(id);
+        
+        fetch(`/admin/peserta/edit/${encodedId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 document.getElementById('edit_name').value = data.user.name;
                 document.getElementById('edit_login_id').value = data.user.login_id;
@@ -211,14 +217,22 @@
                 document.getElementById('edit_major_id').value = data.major_id;
                 document.getElementById('edit_start_date').value = data.start_date;
                 document.getElementById('edit_end_date').value = data.end_date;
-                document.getElementById('formEditPeserta').action = `/admin/peserta/update/${id}`;
+                
+                // Gunakan encodedId juga untuk action form
+                document.getElementById('formEditPeserta').action = `/admin/peserta/update/${encodedId}`;
+                
                 const modal = document.getElementById('modalEdit');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             })
             .catch(error => {
                 console.error('Error:', error);
-                Swal.fire('Gagal!', 'Tidak dapat mengambil data peserta.', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: 'Tidak dapat mengambil data peserta. Pastikan koneksi stabil.',
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
             });
     }
 

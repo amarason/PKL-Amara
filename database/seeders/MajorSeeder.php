@@ -3,21 +3,27 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Major;
+use App\Services\IdGeneratorService;
 
 class MajorSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('major')->insert([
-            [
-                'major_id' => 'Tekdus',
-                'major_name' => 'Teknik Industri',
-            ],
-            [
-                'major_id' => 'SI',
-                'major_name' => 'Sistem Informasi',
-            ],
-        ]);
+        $idService = new IdGeneratorService();
+
+        $majors = [
+            'Teknik Elektro',
+            'Sistem Informasi',
+            'Informatika',
+            'Hukum'
+        ];
+
+        foreach ($majors as $name) {
+            Major::create([
+                'major_id' => $idService->generateMajorId(),
+                'major_name' => $name,
+            ]);
+        }
     }
 }

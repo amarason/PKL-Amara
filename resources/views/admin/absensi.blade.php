@@ -63,7 +63,7 @@
                         <td class="px-8 py-5 italic text-slate-500 text-sm font-medium">"{{ $leave->reason }}"</td>
                         <td class="px-8 py-5">
                             @if($leave->document_path)
-                                <a href="{{ asset('storage/' . $leave->document_path) }}" target="_blank" class="text-blue-600 font-bold text-xs hover:underline">
+                                <a href="{{ asset($leave->document_path) }}" target="_blank" class="text-blue-600 font-bold text-xs hover:underline">
                                     <i class="bi bi-file-earmark-pdf-fill mr-1"></i> Lihat Dokumen
                                 </a>
                             @else
