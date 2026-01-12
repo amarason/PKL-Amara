@@ -19,7 +19,7 @@
         <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/10 overflow-hidden border border-slate-100">
             
             <div class="pt-12 pb-6 flex flex-col items-center">
-                <img src="{{ asset('uploads/img/logo-pln.png') }}" alt="Logo PLN" class="h-24 w-auto mb-4 object-contain">
+                <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="h-24 w-auto mb-4 object-contain">
                 <h1 class="text-3xl font-extrabold pln-blue tracking-tight">SIPRAKER</h1>
                 <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Sistem Presensi Praktik Kerja</p>
             </div>
@@ -66,7 +66,7 @@
 
                 <div class="mt-12 text-center">
                     <p class="text-[10px] text-slate-300 font-medium leading-relaxed italic">
-                        Pastikan Anda menggunakan ID PKL sebagai password default pada login pertama kali. Hubungi Admin jika terkendala.
+                        Gunakan ID PKL sebagai password default pada login pertama kali. Pastikan segera mengganti password Anda. Hubungi Admin jika terkendala.
                     </p>
                 </div>
             </div>
