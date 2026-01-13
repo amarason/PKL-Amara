@@ -16,9 +16,7 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    /**
-     * DASHBOARD PESERTA
-     */
+    // --- 1. Dashboard ---
     public function index()
     {
         $user = Auth::user();
@@ -37,7 +35,7 @@ class UserController extends Controller
             ->where('status', 'izin')
             ->count();
 
-        // Status absensi hari ini (untuk card interaktif)
+        // Status absensi hari ini 
         $absensiHariIni = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', Carbon::today())
             ->first();
@@ -45,9 +43,7 @@ class UserController extends Controller
         return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'absensiHariIni'));
     }
 
-    /**
-     * HALAMAN ABSENSI KAMERA
-     */
+    // --- 2. Absensi kamera ---
     public function indexAbsensi()
     {
         $internship = Internship::where('user_id', Auth::id())->first();
@@ -58,9 +54,7 @@ class UserController extends Controller
         return view('user.absensi_kamera', compact('attendance'));
     }
 
-    /**
-     * PROSES SIMPAN ABSEN MASUK
-     */
+    // --- 3. Simpan Absen Masuk  ---
     public function storeMasuk(Request $request)
     {
         try {
@@ -113,9 +107,8 @@ class UserController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    /**
-     * PROSES SIMPAN ABSEN PULANG
-     */
+
+    // --- 4. Simpan Absen Pulang  ---
     public function storePulang(Request $request)
     {
         $request->validate(['photo' => 'required']);
@@ -149,9 +142,7 @@ class UserController extends Controller
         return response()->json(['success' => 'Berhasil absen pulang, hati-hati di jalan!']);
     }
 
-    /**
-     * HALAMAN PENGAJUAN IZIN
-     */
+    // 5. --- Halaman dan Proses Izin ---
     public function indexIzin()
     {
         $internship = Internship::where('user_id', Auth::id())->first();
@@ -163,9 +154,6 @@ class UserController extends Controller
         return view('user.izin', compact('leaveRequests'));
     }
 
-    /**
-     * PROSES SIMPAN PENGAJUAN IZIN
-     */
     public function storeIzin(Request $request)
     {
         $request->validate([
@@ -206,9 +194,6 @@ class UserController extends Controller
         return redirect()->route('user.izin.index')->with('success', 'Pengajuan izin berhasil dikirim.');
     }
 
-    /**
-     * PROSES BATALKAN/HAPUS IZIN
-     */
     public function destroyIzin($id)
     {
         $internship = Internship::where('user_id', Auth::id())->first();
@@ -229,9 +214,7 @@ class UserController extends Controller
         return redirect()->route('user.izin.index')->with('success', 'Pengajuan izin berhasil dibatalkan.');
     }
 
-    /**
-     * HALAMAN REKAP ABSENSI PERSONAL
-     */
+    // --- 5. Rekap dan laporan pdf --- 
     public function indexRekap(Request $request)
     {
         $user = Auth::user();
@@ -257,9 +240,7 @@ class UserController extends Controller
         return view('user.rekap', compact('internship', 'attendances', 'stats', 'month', 'year'));
     }
 
-    /**
-     * EXPORT PDF REKAP PERSONAL
-     */
+
     public function exportRekapPdf(Request $request)
     {
         $user = Auth::user();

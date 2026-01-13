@@ -23,7 +23,7 @@ Route::middleware(['auth'])->group(function () {
     // --- RUTE VERIFIKASI PUBLIK (Bisa diakses tanpa login agar instansi luar bisa scan QR) ---
     Route::get('/verifikasi/laporan/{hash}', [AdminController::class, 'verifyReport'])->name('report.verify');
 
-    // --- 1. GRUP RUTE KHUSUS ADMIN ---
+    // --- 1. Grup rute khusus admin ---
     Route::middleware(['role:ROLE_ADMIN'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::get('/peserta/manajemen', [AdminController::class, 'indexPeserta'])->name('admin.peserta.index');
@@ -46,7 +46,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
     });
 
-    // --- 2. GRUP RUTE KHUSUS PESERTA PKL ---
+    // --- 2. Grup rute khusus peserta PKL ---
     Route::middleware(['auth', 'role:ROLE_PESERTA'])->prefix('user')->group(function () {
         // Dashboard Peserta
         Route::get('/dashboard', [UserController::class, 'index'])->name('user.dashboard');

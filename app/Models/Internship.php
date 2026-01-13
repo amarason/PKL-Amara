@@ -27,8 +27,7 @@ class Internship extends Model
     ];
 
     /**
-     * Menghitung total hari yang seharusnya sudah dilalui (Hari Kerja Efektif)
-     * Mengeluarkan Sabtu, Minggu, dan Hari Libur Nasional dari perhitungan.
+     * Menghitung total hari kerja efektif selama periode PKL (selain Sabtu, Minggu, dan Hari Libur Nasional)
      */
     public function getTotalSeharusnyaHadir()
     {
@@ -52,7 +51,7 @@ class Internship extends Model
 
         /**
          * 4. Hitung selisih hari kerja secara inklusif
-         * diffInDaysFiltered digunakan untuk  iterasi setiap hari dalam rentang tersebut
+         * diffInDaysFiltered =  iterasi setiap hari dalam rentang tersebut
          * Menghitung hari yang BUKAN weekend dan BUKAN hari libur nasional
          */
         $totalHariEfektif = $start->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
@@ -66,7 +65,7 @@ class Internship extends Model
     }
 
     /**
-     * Relasi ke User (Identitas Peserta)
+     * Relasi ke User 
      */
     public function user(): BelongsTo
     {

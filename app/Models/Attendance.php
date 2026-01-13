@@ -31,7 +31,7 @@ class Attendance extends Model
     public $timestamps = true;
 
     /**
-     * Relasi ke Internship (Pemilik Absensi)
+     * Relasi ke Internship
      */
     public function internship(): BelongsTo
     {

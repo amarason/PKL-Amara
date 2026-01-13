@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('holidays', function (Blueprint $table) {
             $table->id();
-            $table->date('holiday_date')->unique(); // Tanggal libur
-            $table->string('holiday_name');         // Nama libur (misal: Tahun Baru Imlek)
+            $table->date('holiday_date')->unique(); 
+            $table->string('holiday_name');         
             $table->boolean('is_national_holiday')->default(true);
             $table->timestamps();
         });
