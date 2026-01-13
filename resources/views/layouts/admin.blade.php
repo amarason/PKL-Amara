@@ -34,7 +34,7 @@
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-100 transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:flex md:flex-col">
         <div class="p-7 flex items-center space-x-3">
-            <img src="{{ asset('uploads/img/logo-pln.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain">
+            <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain">
             <span class="text-[#3B82F6] text-2xl font-extrabold tracking-tight">SIPRAKER</span>
         </div>
 

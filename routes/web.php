@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\UserController; // Import UserController Baru
+use App\Http\Controllers\UserController; 
 use Illuminate\Support\Facades\Route;
 
 // Redirect halaman utama ke login
@@ -59,9 +59,10 @@ Route::middleware(['auth'])->group(function () {
         // Fitur Pengajuan Izin
         Route::get('/izin', [UserController::class, 'indexIzin'])->name('user.izin.index');
         Route::post('/izin/store', [UserController::class, 'storeIzin'])->name('user.izin.store');
+        Route::delete('/izin/{id}', [UserController::class, 'destroyIzin'])->name('user.izin.destroy');
 
-        // Fitur Rekap & Download Laporan (Personal)
+        // Fitur Rekap & Download Laporan 
         Route::get('/rekap', [UserController::class, 'indexRekap'])->name('user.rekap.index');
-        Route::get('/rekap/download', [UserController::class, 'downloadRekap'])->name('user.rekap.download');
+        Route::get('/rekap/export-pdf', [UserController::class, 'exportRekapPdf'])->name('user.rekap.pdf');
     });
 });

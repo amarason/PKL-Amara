@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <title>SIPRAKER - Peserta</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #F8FAFC; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
 
 <body class="min-h-screen">
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-100 transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:flex md:flex-col">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-100 transform -translate-x-full sidebar-transition md:translate-x-0 md:flex md:flex-col">
         <div class="p-7 flex items-center space-x-3">
-            <img src="{{ asset('uploads/img/logo-pln.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain">
+            <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain">
             <span class="text-[#3B82F6] text-2xl font-extrabold tracking-tight">SIPRAKER</span>
         </div>
 
@@ -44,9 +49,7 @@
                 <i class="bi bi-list"></i>
             </button>
 
-            <div></div>
-
-            <div class="flex items-center space-x-6">
+            <div></div> <div class="flex items-center space-x-6">
                 <div class="flex items-center border-l pl-6 border-slate-100 space-x-4">
                     <div class="text-right hidden sm:block">
                         <p class="text-sm font-bold text-slate-600">{{ Auth::user()->name }}</p>
@@ -55,7 +58,7 @@
 
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                        <button type="submit" class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Logout">
                             <i class="bi bi-box-arrow-right"></i>
                         </button>
                     </form>
@@ -75,7 +78,15 @@
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
         }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.add('md:translate-x-0');
+                overlay.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
-
