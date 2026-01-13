@@ -36,30 +36,39 @@
     {{-- Widget: Statistik Kehadiran --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         {{-- Card Hadir --}}
-        <div class="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="relative z-10">
-                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Total Hadir</h4>
-                <p class="text-5xl font-black mt-2">{{ $stats['hadir'] }}</p>
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl mb-4 transition-transform group-hover:scale-110 duration-300">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Hadir</h4>
+                <p class="text-4xl font-black text-slate-800 mt-1">{{ $stats['hadir'] }} <span class="text-sm text-slate-400 font-bold">Hari</span></p>
             </div>
-            <i class="bi bi-person-check absolute bottom-[-10px] right-[-10px] text-7xl opacity-20 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0"></i>
+            <i class="bi bi-person-check absolute bottom-[-15px] right-[-15px] text-8xl text-slate-50/50 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0"></i>
         </div>
 
         {{-- Card Izin --}}
         <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="relative z-10">
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Izin</h4>
-                <p class="text-5xl font-black text-slate-800 mt-2">{{ $stats['izin'] }}</p>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl mb-4 transition-transform group-hover:scale-110 duration-300">
+                    <i class="bi bi-envelope-paper-fill"></i>
+                </div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Izin</h4>
+                <p class="text-4xl font-black text-slate-800 mt-1">{{ $stats['izin'] }} <span class="text-sm text-slate-400 font-bold">Hari</span></p>
             </div>
-            <i class="bi bi-envelope-paper absolute bottom-[-10px] right-[-10px] text-7xl text-slate-50 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0 group-hover:text-blue-50"></i>
+            <i class="bi bi-envelope-paper absolute bottom-[-15px] right-[-15px] text-8xl text-slate-50/50 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0"></i>
         </div>
 
         {{-- Card Alpha --}}
         <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="relative z-10">
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tanpa Keterangan</h4>
-                <p class="text-5xl font-black text-slate-800 mt-2">{{ $stats['alpha'] }}</p>
+                <div class="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-xl mb-4 transition-transform group-hover:scale-110 duration-300">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanpa Keterangan</h4>
+                <p class="text-4xl font-black text-slate-800 mt-1">{{ $stats['alpha'] }} <span class="text-sm text-slate-400 font-bold">Hari</span></p>
             </div>
-            <i class="bi bi-patch-exclamation absolute bottom-[-10px] right-[-10px] text-7xl text-slate-50 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0 group-hover:text-red-50"></i>
+            <i class="bi bi-patch-exclamation absolute bottom-[-15px] right-[-15px] text-8xl text-slate-50/50 transform -rotate-12 transition-transform duration-500 group-hover:rotate-0"></i>
         </div>
     </div>
 
