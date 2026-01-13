@@ -18,7 +18,6 @@
             font-family: 'Poppins', sans-serif;
             background-color: #F8FAFC;
         }
-        /* Animasi berdenyut untuk badge notifikasi */
         .pulse-badge {
             animation: pulse-red 2s infinite;
         }
@@ -112,7 +111,6 @@
         let lastCount = 0;
 
         function fetchNotifications() {
-            // Gantilah URL ini dengan route yang mengembalikan JSON { "count": X }
             fetch("{{ route('admin.notification.check') }}")
                 .then(response => response.json())
                 .then(data => {
@@ -151,7 +149,6 @@
                 .catch(error => console.warn('Notification fetch failed. Ensure route exists.'));
         }
 
-        // Jalankan saat load dan interval 30 detik
         document.addEventListener('DOMContentLoaded', () => {
             fetchNotifications();
             setInterval(fetchNotifications, 30000);

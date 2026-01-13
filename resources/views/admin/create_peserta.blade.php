@@ -108,7 +108,6 @@
             <div class="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                 <p class="text-slate-400 text-xs italic"><i class="bi bi-info-circle mr-2"></i>Pastikan data sesuai dokumen resmi</p>
                 <div class="flex gap-4">
-                    {{-- TOMBOL RESET DENGAN WARNA BARU & KONFIRMASI --}}
                     <button type="button" onclick="confirmReset()" class="px-8 py-3 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded-2xl transition-all duration-200 ease-in-out">
                         Reset
                     </button>
@@ -128,10 +127,9 @@
         <p id="modalDescription" class="text-slate-400 text-sm mb-6">Masukkan nama baru untuk didaftarkan ke sistem.</p>
         <input type="hidden" id="modalTarget">
         
-        {{-- INPUT DENGAN ID newNameInput --}}
         <input type="text" id="newNameInput" 
                class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700 mb-6" 
-               placeholder=""> {{-- Placeholder akan diisi oleh JS --}}
+               placeholder=""> 
                
         <div class="flex space-x-3">
             <button type="button" onclick="closeModal()" class="flex-1 py-4 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Batal</button>
@@ -155,7 +153,7 @@
     </div>
 </div>
 
-{{-- SCRIPTS --}}
+
 <script>
     // --- Logika Modal Tambah ---
     function openModal(type) {
@@ -180,7 +178,6 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         
-        // Auto focus ke input saat modal terbuka
         setTimeout(() => input.focus(), 100);
     }
 

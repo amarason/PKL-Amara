@@ -2,70 +2,99 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Rekap Absensi - {{ $namaBulan }} {{ $tahun }}</title>
-
     <link rel="stylesheet" href="{{ public_path('css/laporan.css') }}">
 </head>
 <body>
-    <div class="header">
-        <div class="title">Laporan Rekapitulasi Absensi Peserta PKL</div>
-        <div class="subtitle">Periode: {{ $bulan == 'all' ? 'Semua Bulan' : $namaBulan }} {{ $tahun }}</div>
-        <div class="subtitle">Instansi: {{ $namaInstansi }}</div>
-    </div>
-
-    <table>
-        <thead>
+    <div class="container">
+        <table class="header-table">
             <tr>
-                <th width="5%">No</th>
-                <th width="35%">Nama Peserta</th>
-                <th width="15%">ID PKL</th>
-                <th width="10%">Hadir</th>
-                <th width="10%">Izin</th>
-                <th width="10%">Alpha</th>
-                <th width="15%">Efektivitas</th>
+                <td class="header-logo">
+                    @if($logoData)
+                        <img src="data:image/png;base64,{{ $logoData }}" width="75">
+                    @endif
+                </td>
+                <td class="header-text">
+                    <h1>PT PLN INDONESIA POWER</h1>
+                    <h2>UBP SEMARANG</h2>
+                    <p>Laporan Rekapitulasi Absensi Seluruh Peserta PKL</p>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach($peserta as $index => $p)
-                @php
-                    $hadir = $p->attendance->where('status', 'hadir')->count();
-                    $izin = $p->attendance->where('status', 'izin')->count();
-                    $alpha = $p->attendance->where('status', 'alpha')->count();
-                    $total = $hadir + $izin + $alpha;
-                    $persen = $total > 0 ? round(($hadir / $total) * 100) : 0;
-                @endphp
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $p->user->name }}</td>
-                    <td class="text-center">{{ $p->user->login_id }}</td>
-                    <td class="text-center">{{ $hadir }}</td>
-                    <td class="text-center">{{ $izin }}</td>
-                    <td class="text-center text-bold" style="color: #e11d48">{{ $alpha }}</td>
-                    <td class="text-center text-bold">{{ $persen }}%</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+        </table>
 
-    <div class="footer">
-        <div class="ttd-container">
-            <p>Semarang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-            <p>Admin Pembimbing,</p>
-            
-            <div class="qrcode-box">
-                {{-- QR CODE DITAMPILKAN DISINI --}}
-                <img src="data:image/svg+xml;base64,{{ $qrcode }}" width="80">
-            </div>
-            
-            <p class="text-bold"><u>{{ auth()->user()->name }}</u></p>
-            <p style="font-size: 10px;">NIP/ID: {{ auth()->user()->login_id }}</p>
+        {{-- Info Laporan --}}
+        <div class="info-section">
+            <table class="info-table">
+                <tr><td class="label">Periode</td><td>: {{ $namaBulan }} {{ $tahun }}</td></tr>
+                <tr><td class="label">Instansi</td><td>: {{ $namaInstansi }}</td></tr>
+            </table>
         </div>
-        <div style="clear: both;"></div>
-        
-        <div class="info-cetak">
-            @php \Carbon\Carbon::setLocale('id'); @endphp
-            * Scan QR Code untuk verifikasi keaslian dokumen secara digital.<br>
-            * Dokumen ini diterbitkan oleh Sistem Absensi PKL pada {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}.
+
+        {{-- Kotak Ringkasan Keaktifan Kolektif --}}
+        <div class="summary-box">
+            <strong>RINGKASAN KEAKTIFAN (TOTAL):</strong> &nbsp;&nbsp; 
+            Hadir: <strong>{{ $globalStats['hadir'] }}</strong> &nbsp; | &nbsp; 
+            Izin: <strong>{{ $globalStats['izin'] }}</strong> &nbsp; | &nbsp; 
+            Alpha: <strong>{{ $globalStats['alpha'] }}</strong>
+        </div>
+
+        {{-- Tabel Utama Admin --}}
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th width="5%">No</th>
+                    <th width="30%">Nama Peserta</th>
+                    <th width="15%">ID PKL</th>
+                    <th width="10%">Hadir</th>
+                    <th width="10%">Izin</th>
+                    <th width="10%">Alpha</th>
+                    <th width="20%">Efektivitas (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($peserta as $index => $p)
+                    @php
+                        $h = $p->attendance->where('status', 'hadir')->count();
+                        $i = $p->attendance->where('status', 'izin')->count();
+                        if ($bulan == 'all') {
+                            $totalSeharusnya = $p->getTotalSeharusnyaHadir();
+                            $a = max(0, $totalSeharusnya - ($h + $i));
+                        } else {
+                            $a = $p->attendance->where('status', 'alpha')->count();
+                            $totalSeharusnya = $h + $i + $a;
+                        }
+                        $persen = $totalSeharusnya > 0 ? min(100, round(($h / $totalSeharusnya) * 100)) : 0;
+                    @endphp
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td style="text-align: left; padding-left: 8px;">{{ $p->user->name }}</td>
+                        <td>{{ $p->user->login_id }}</td>
+                        <td class="text-hadir">{{ $h }}</td>
+                        <td class="text-izin">{{ $i }}</td>
+                        <td class="text-alpha">{{ $a }}</td>
+                        <td style="font-weight: bold;">{{ $persen }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Footer dengan QR Code --}}
+        <div class="footer-container">
+            <div class="info-footer">
+                <p><strong>Verifikasi Digital:</strong><br>
+                * Dokumen ini diterbitkan oleh Sistem SIPRAKER PLN IP UBP Semarang.<br>
+                * Scan QR Code di samping untuk verifikasi data asli.</p>
+            </div>
+
+            <div class="signature-box">
+                <p>Semarang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+                <p>Admin Pembimbing PKL,</p>
+                <div class="qrcode-sig">
+                    <img src="data:image/svg+xml;base64,{{ $qrcode }}" width="80">
+                </div>
+                <p><strong><u>{{ auth()->user()->name }}</u></strong></p>
+                {{-- <p>NIP/ID: {{ auth()->user()->login_id }}</p> --}}
+            </div>
+            <div class="clear"></div>
         </div>
     </div>
 </body>

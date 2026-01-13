@@ -35,10 +35,9 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->text('update_reason')->nullable();
 
-            // Timestamp
             $table->timestamps();
 
-            // FOREIGN KEYS
+            // Foreign Keys
             $table->foreign('internship_id')
                   ->references('internship_id')
                   ->on('internship')
@@ -49,7 +48,6 @@ return new class extends Migration
                   ->on('users')
                   ->onDelete('set null');
 
-            // UNIQUE CONSTRAINT
             // 1 peserta hanya 1 absensi per hari
             $table->unique(['internship_id', 'attendance_date']);
         });

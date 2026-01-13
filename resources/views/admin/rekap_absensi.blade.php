@@ -2,7 +2,6 @@
 
 @section('content')
 <div class="space-y-8 pb-20">
-    {{-- Header --}}
     <div>
         <h2 class="text-3xl font-black text-slate-800 tracking-tight">Rekap Absensi</h2>
         <p class="text-slate-400 font-bold text-sm mt-1">Laporan statistik kehadiran seluruh peserta PKL</p>

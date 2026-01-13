@@ -1,98 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Rekap_Absensi_{{ $internship->user->name }}</title>
-    <style>
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 11pt; 
-            color: #1a202c; 
-            line-height: 1.5; 
-            margin: 0;
-            padding: 0;
-        }
-        .container { padding: 30px; }
-        
-        /* Kop Surat Modern dengan Tabel */
-        .header-table { 
-            width: 100%; 
-            border-bottom: 3px double #000; 
-            padding-bottom: 10px; 
-            margin-bottom: 25px; 
-        }
-        .header-logo { width: 80px; text-align: left; vertical-align: middle; }
-        .header-text { text-align: center; vertical-align: middle; padding-right: 80px; }
-        .header-text h1 { margin: 0; font-size: 16pt; text-transform: uppercase; }
-        .header-text h2 { margin: 2px 0; font-size: 13pt; font-weight: normal; }
-        .header-text p { margin: 0; font-size: 8pt; color: #4b5563; }
-        .header-text .sub-p { font-style: italic; font-size: 7pt; color: #94a3b8; }
-
-        /* Identitas Peserta */
-        .info-section { margin-bottom: 20px; width: 100%; }
-        .info-table { width: 100%; border: none; }
-        .info-table td { padding: 3px 0; vertical-align: top; font-size: 10pt; }
-        .label { width: 140px; font-weight: bold; }
-        
-        /* Ringkasan Kehadiran */
-        .summary-text { 
-            margin: 15px 0; 
-            padding: 12px; 
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            font-size: 10pt;
-            border-radius: 5px;
-        }
-
-        /* Tabel Utama */
-        table.main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table.main-table th { 
-            background-color: #f1f5f9; 
-            border: 1px solid #cbd5e1; 
-            padding: 10px 5px; 
-            font-size: 9pt; 
-            text-transform: uppercase;
-            text-align: center;
-        }
-        table.main-table td { 
-            border: 1px solid #cbd5e1; 
-            padding: 8px 5px; 
-            font-size: 9pt; 
-            text-align: center; 
-        }
-        
-        /* Pewarnaan Status */
-        .status-hadir { color: #059669; font-weight: bold; }
-        .status-izin { color: #d97706; font-style: italic; }
-        .status-alpha { color: #dc2626; font-weight: bold; }
-
-        /* Footer & Tanda Tangan */
-        .footer-container { margin-top: 50px; width: 100%; }
-        
-        .signature-wrapper { 
-            float: right; 
-            width: 250px; 
-            text-align: center; 
-        }
-        
-        .qrcode-signature { 
-            margin: 10px 0; /* Memberi jarak antara tulisan Peserta PKL dan Nama */
-        }
-
-        .info-cetak-kiri {
-            float: left;
-            width: 300px;
-            font-size: 8pt;
-            color: #64748b;
-            margin-top: 30px;
-        }
-
-        .clear { clear: both; }
-    </style>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ public_path('css/laporan.css') }}">
 </head>
 <body>
     <div class="container">
-        {{-- Header Layout dengan Logo --}}
         <table class="header-table">
             <tr>
                 <td class="header-logo">
@@ -131,7 +44,6 @@
             </table>
         </div>
 
-        {{-- Box Ringkasan --}}
         <div class="summary-text">
             <strong>RINGKASAN KEHADIRAN:</strong> &nbsp;&nbsp; 
             Hadir: <strong>{{ $stats['hadir'] }}</strong> Hari &nbsp; | &nbsp; 
@@ -139,7 +51,6 @@
             Alpha: <strong>{{ $stats['alpha'] }}</strong> Hari
         </div>
 
-        {{-- Tabel Data --}}
         <table class="main-table">
             <thead>
                 <tr>

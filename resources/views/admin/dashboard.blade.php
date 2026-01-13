@@ -76,17 +76,17 @@
                 <tr class="hover:bg-slate-50/50 transition">
                     <td class="px-6 py-4 text-slate-400">{{ $index + 1 }}</td>
                     
-                    {{-- PERBAIKAN: Akses Nama via Internship -> User --}}
+                    {{-- Akses Nama via Internship -> User --}}
                     <td class="px-6 py-4 font-bold text-slate-700">
                         {{ $row->internship->user->name }}
                     </td>
 
-                    {{-- PERBAIKAN: Akses Login ID --}}
+                    {{-- Akses Login ID --}}
                     <td class="px-8 py-5 font-medium text-blue-500">
                         {{ $row->internship->user->login_id }}
                     </td>
 
-                    {{-- PERBAIKAN: Akses Periode via Internship --}}
+                    {{-- Akses Periode via Internship --}}
                     <td class="px-6 py-4 text-slate-400 text-sm">
                         {{ \Carbon\Carbon::parse($row->internship->start_date)->format('M') }} -
                         {{ \Carbon\Carbon::parse($row->internship->end_date)->format('M y') }}
