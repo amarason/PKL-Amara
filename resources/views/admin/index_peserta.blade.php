@@ -3,7 +3,6 @@
 @section('content')
 <div class="flex flex-col space-y-8 px-4 sm:px-0">
 
-    {{-- Header & Search --}}
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
         <div>
             <h2 class="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
@@ -218,7 +217,6 @@
                 document.getElementById('edit_start_date').value = data.start_date;
                 document.getElementById('edit_end_date').value = data.end_date;
                 
-                // Gunakan encodedId juga untuk action form
                 document.getElementById('formEditPeserta').action = `/admin/peserta/update/${encodedId}`;
                 
                 const modal = document.getElementById('modalEdit');

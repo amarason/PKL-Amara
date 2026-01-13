@@ -28,10 +28,8 @@ return new class extends Migration
             $table->char('institution_id', 30);
             $table->char('major_id', 30);
 
-            // Timestamps (Otomatis menciptakan created_at dan updated_at)
             $table->timestamps();
 
-            // =========================
             // Relasi ke tabel users
             $table->foreign('user_id')
                   ->references('id')

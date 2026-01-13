@@ -10,27 +10,26 @@ return new class extends Migration
     {
         Schema::create('leave_request', function (Blueprint $table) {
             
-            // PRIMARY KEY
+            // Primary Key
             $table->char('leave_id', 30)->primary();
 
-            // RELASI
+            // Relasi
             $table->char('internship_id', 30);           // FK ke internship
             $table->char('approved_by', 30)->nullable(); // FK ke users.user_id (admin)
             $table->timestamp('approved_at')->nullable();
 
-            // DATA IZIN
+            // Izin
             $table->date('leave_date');
             $table->text('reason');
             $table->string('document_path', 255)->nullable();
 
-            // STATUS
+            // Status
             $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])
                   ->default('menunggu');
 
-            // TIMESTAMP
             $table->timestamps();
 
-            // FOREIGN KEYS
+            // Foreign Keys
             $table->foreign('internship_id')
                   ->references('internship_id')
                   ->on('internship')

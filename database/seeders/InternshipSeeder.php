@@ -13,10 +13,8 @@ class InternshipSeeder extends Seeder
     public function run(): void
     {
         $idService = new IdGeneratorService();
-        
-        // Ambil user peserta pertama
+
         $user = User::where('login_id', 'IP26/S1/001')->first();
-        // Ambil instansi pertama (UNIVERSITAS ABC)
         $inst = Institution::first(); 
         
         if ($user && $inst) {
@@ -27,7 +25,7 @@ class InternshipSeeder extends Seeder
                 'internship_id' => $idService->generateInternshipId($strata),
                 'user_id' => $user->id,
                 'institution_id' => $inst->institution_id,
-                'major_id' => 'MJR-001', // Merujuk ke Teknik Industri
+                'major_id' => 'MJR-001', 
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-03-31',
                 'status' => 'aktif',

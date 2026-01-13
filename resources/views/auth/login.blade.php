@@ -34,6 +34,7 @@
 
                 <form action="{{ url('/login') }}" method="POST" class="space-y-6">
                     @csrf
+                    
                     <div>
                         <label class="block text-[11px] font-bold text-slate-400 uppercase mb-2 ml-1 tracking-wider">ID Identitas</label>
                         <div class="relative group">
@@ -42,7 +43,7 @@
                             </span>
                             <input type="text" name="login_id" value="{{ old('login_id') }}" required autofocus
                                 class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-[#00A2E9] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                                placeholder="Contoh: IP26/S1/001">
+                                placeholder="Masukkan ID Identitas">
                         </div>
                     </div>
 
@@ -52,16 +53,18 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-300 group-focus-within:pln-blue transition-colors">
                                 <i class="bi bi-key-fill text-xl"></i>
                             </span>
-                            <input type="password" name="password" required
-                                class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-[#00A2E9] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
+                            <input type="password" name="password" id="password" required
+                                class="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-[#00A2E9] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
                                 placeholder="••••••••">
                         </div>
                     </div>
 
-                    <button type="submit" 
-                        class="w-full bg-pln-blue hover:bg-[#008bc8] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.97] flex items-center justify-center tracking-widest text-sm">
-                        MASUK SEKARANG <i class="bi bi-arrow-right-short text-2xl ml-1"></i>
-                    </button>
+                    <div class="pt-4">
+                        <button type="submit" 
+                            class="w-full bg-pln-blue hover:bg-[#008bc8] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.97] flex items-center justify-center tracking-widest text-sm">
+                            MASUK SEKARANG <i class="bi bi-arrow-right-short text-2xl ml-1"></i>
+                        </button>
+                    </div>
                 </form>
 
                 <div class="mt-12 text-center">

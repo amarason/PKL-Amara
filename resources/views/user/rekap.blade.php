@@ -2,7 +2,6 @@
 
 @section('content')
 <div class="space-y-10">
-    {{-- Bagian Atas: Header, Filter & Tombol --}}
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
             <h2 class="text-3xl font-black text-slate-800 tracking-tight">Rekap Absensi</h2>
@@ -13,7 +12,6 @@
             {{-- Filter Bulan --}}
             <form action="{{ route('user.rekap.index') }}" method="GET" class="flex gap-2">
                 <select name="month" class="px-4 py-2 bg-white border border-slate-100 rounded-xl font-bold text-slate-600 text-sm outline-none focus:ring-4 focus:ring-blue-50 transition">
-                    {{-- Opsi Default --}}
                     <option value="">Semua Bulan (Periode PKL)</option>
                     
                     @for($m=1; $m<=12; $m++)
@@ -28,7 +26,6 @@
                 </button>
             </form>
             
-            {{-- Tombol Export PDF --}}
             <a href="{{ route('user.rekap.pdf', ['month' => $month, 'year' => $year ?? date('Y')]) }}" 
                class="bg-red-500 text-white px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-600 transition flex items-center shadow-lg shadow-red-100">
                 <i class="bi bi-file-pdf mr-2"></i> Export PDF
@@ -36,7 +33,7 @@
         </div>
     </div>
 
-    {{-- Bagian Widget: Statistik Kehadiran --}}
+    {{-- Widget: Statistik Kehadiran --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         {{-- Card Hadir --}}
         <div class="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">

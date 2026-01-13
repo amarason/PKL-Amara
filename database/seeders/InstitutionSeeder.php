@@ -15,7 +15,7 @@ class InstitutionSeeder extends Seeder
         $institutions = [
             'UNIVERSITAS ABC',
             'UNIVERSITAS DIPONEGORO',
-            'SMK NEGERI 1 SEMARANG' // Contoh untuk testing strata SMK
+            'SMK NEGERI 1 SEMARANG' 
         ];
 
         foreach ($institutions as $name) {

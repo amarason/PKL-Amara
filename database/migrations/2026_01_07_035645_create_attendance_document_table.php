@@ -10,25 +10,24 @@ return new class extends Migration
     {
         Schema::create('attendance_document', function (Blueprint $table) {
 
-            // PRIMARY KEY
+            // Primary Key
             $table->char('document_id', 30)->primary();
 
-            // FOREIGN KEYS
+            // Foreign Keys
             $table->char('internship_id', 30);              // relasi ke internship
             $table->unsignedBigInteger('generated_by');     // user (admin / PKL)
 
-            // PERIODE LAPORAN
+            // Periode Laporan
             $table->date('period_start');
             $table->date('period_end');
 
-            // FILE & QR
+            // File & QR
             $table->string('file_path', 255);
             $table->string('qr_hash', 255);
 
-            // WAKTU GENERATE
             $table->timestamp('generated_at');
 
-            // CONSTRAINT
+            // Constraints
             $table->foreign('internship_id')
                   ->references('internship_id')
                   ->on('internship')

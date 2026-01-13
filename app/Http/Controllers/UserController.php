@@ -63,41 +63,56 @@ class UserController extends Controller
      */
     public function storeMasuk(Request $request)
     {
-        $request->validate(['photo' => 'required']); 
-        
-        $internship = Internship::where('user_id', Auth::id())->first();
-        
-        // Cek jika sudah ada data kehadiran/izin hari ini
-        $existing = Attendance::where('internship_id', $internship->internship_id)
-            ->whereDate('attendance_date', Carbon::today())
-            ->first();
+        try {
+            $request->validate(['photo' => 'required']); 
+            $internship = Internship::where('user_id', Auth::id())->first();
 
-        if ($existing) {
-            return response()->json(['error' => 'Anda sudah tercatat hadir atau izin hari ini.'], 400);
+            // Cek Keberadaan Data
+            $existing = Attendance::where('internship_id', $internship->internship_id)
+                ->whereDate('attendance_date', Carbon::today())
+                ->first();
+
+            if ($existing) {
+                return response()->json(['error' => 'Anda sudah tercatat hadir hari ini.'], 400);
+            }
+
+            $image = $request->photo; 
+            if (preg_match('/^data:image\/(\w+);base64,/', $image, $type)) {
+                $image = substr($image, strpos($image, ',') + 1);
+                $type = strtolower($type[1]); // jpg, png, etc
+
+                if (!in_array($type, ['jpg', 'jpeg', 'png'])) {
+                    throw new \Exception('Format gambar tidak valid.');
+                }
+                $image = str_replace(' ', '+', $image);
+            } else {
+                throw new \Exception('Data gambar tidak valid.');
+            }
+
+            $safeId = Str::slug($internship->internship_id);
+            $imageName = 'in_' . $safeId . '_' . time() . '.jpg';
+
+            if (!file_exists(public_path('uploads/attendance'))) {
+                mkdir(public_path('uploads/attendance'), 0777, true);
+            }
+
+            Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
+
+            Attendance::create([
+                'attendance_id' => 'ATT-' . strtoupper(Str::random(7)),
+                'internship_id' => $internship->internship_id,
+                'attendance_date' => Carbon::today(),
+                'check_in_time' => Carbon::now()->toTimeString(),
+                'check_in_photo' => 'uploads/attendance/' . $imageName,
+                'status' => 'hadir'
+            ]);
+
+            return response()->json(['success' => 'Berhasil absen masuk!']);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        // Bersihkan data base64
-        $image = $request->photo; 
-        $image = str_replace(['data:image/jpeg;base64,', 'data:image/png;base64,', ' '], ['', '', '+'], $image);
-        
-        $safeId = Str::slug($internship->internship_id);
-        $imageName = 'in_' . $safeId . '_' . time() . '.jpg';
-
-        // Simpan menggunakan disk public_uploads
-        Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
-
-        Attendance::create([
-            'attendance_id' => 'ATT-' . strtoupper(Str::random(7)),
-            'internship_id' => $internship->internship_id,
-            'attendance_date' => Carbon::today(),
-            'check_in_time' => Carbon::now()->toTimeString(),
-            'check_in_photo' => 'uploads/attendance/' . $imageName,
-            'status' => 'hadir'
-        ]);
-
-        return response()->json(['success' => 'Berhasil absen masuk!']);
     }
-
     /**
      * PROSES SIMPAN ABSEN PULANG
      */

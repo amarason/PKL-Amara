@@ -207,7 +207,7 @@
     </div>
 </div>
 
-{{-- MODAL PHOTO BUKTI --}}
+{{-- MODAL BUKTI FOTO --}}
 <div id="modalPhoto" class="fixed inset-0 z-[999] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="this.parentElement.classList.add('hidden')"></div>
     <div class="relative w-full max-w-2xl bg-white rounded-[3rem] overflow-hidden shadow-2xl">

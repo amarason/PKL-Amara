@@ -26,7 +26,6 @@ return new class extends Migration
             $table->dropColumn(['email', 'email_verified_at']);
         });
 
-        // Tambahkan foreign key setelah kolom ada
         Schema::table('users', function (Blueprint $table) {
             $table->foreign('role_id')
                   ->references('role_id')

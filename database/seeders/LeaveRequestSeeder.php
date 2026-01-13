@@ -12,10 +12,7 @@ class LeaveRequestSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Ambil data internship pertama
         $internship = Internship::first();
-        
-        // 2. Ambil data admin pertama
         $admin = User::where('role_id', 'ROLE_ADMIN')->first();
 
         if ($internship && $admin) {

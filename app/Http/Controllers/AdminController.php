@@ -8,7 +8,7 @@ use App\Models\Attendance;
 use App\Models\Institution;
 use App\Models\Major;
 use App\Models\LeaveRequest;
-use App\Services\IdGeneratorService; // Import Service Baru
+use App\Services\IdGeneratorService; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -99,11 +99,9 @@ class AdminController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
-                // 1. Deteksi Strata dari Nama Instansi untuk ID Internship
                 $inst = Institution::where('institution_id', $request->institution_id)->first();
                 $strata = str_contains(strtoupper($inst->institution_name), 'SMK') ? 'SMK' : 'S1';
 
-                // 2. Buat Akun User
                 $user = User::create([
                     'login_id' => $request->login_id,
                     'name' => $request->name,
@@ -112,7 +110,6 @@ class AdminController extends Controller
                     'is_active' => 1,
                 ]);
 
-                // 3. Buat Data Internship dengan Service IdGenerator
                 Internship::create([
                     'internship_id' => $this->idService->generateInternshipId($strata),
                     'user_id' => $user->id,
@@ -278,34 +275,44 @@ class AdminController extends Controller
         $tahun = $request->get('tahun', date('Y'));
         $institution_id = $request->get('institution_id');
 
-        $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
-            if ($bulan && $bulan !== 'all') $query->whereMonth('attendance_date', $bulan);
-            $query->whereYear('attendance_date', $tahun);
+        // Query Data Peserta
+        $query = Internship::with(['user', 'institution', 'attendance' => function($q) use ($bulan, $tahun) {
+            if ($bulan && $bulan !== 'all') $q->whereMonth('attendance_date', $bulan);
+            $q->whereYear('attendance_date', $tahun);
         }]);
 
         if ($institution_id) $query->where('institution_id', $institution_id);
-
         $peserta = $query->where('status', 'aktif')->get();
 
-        $namaInstansi = "Semua Instansi";
-        if ($institution_id) {
-            $inst = Institution::where('institution_id', $institution_id)->first();
-            $namaInstansi = $inst ? $inst->institution_name : "Semua Instansi";
+        // Hitung Ringkasan Keaktifan Seluruh Peserta
+        $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
+        foreach($peserta as $p) {
+            $globalStats['hadir'] += $p->attendance->where('status', 'hadir')->count();
+            $globalStats['izin'] += $p->attendance->where('status', 'izin')->count();
+    
+            if ($bulan == 'all') {
+                $globalStats['alpha'] += max(0, $p->getTotalSeharusnyaHadir() - ($p->attendance->whereIn('status', ['hadir', 'izin'])->count()));
+            } else {
+                $globalStats['alpha'] += $p->attendance->where('status', 'alpha')->count();
+            }
         }
 
+        $namaInstansi = $institution_id ? (Institution::find($institution_id)->institution_name ?? "Semua") : "Semua Instansi";
         $namaBulan = ($bulan === 'all') ? "Seluruh Bulan" : date('F', mktime(0, 0, 0, (int)$bulan, 1));
 
-        // URL Verifikasi untuk QR Code (Menggunakan Hash Encrypted)
+        // Logo & QR Code
+        $logoPath = public_path('uploads/img/logo-pln.png');
+        $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+        
         $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun);
         $verifyUrl = route('report.verify', ['hash' => $hash]);
-        
         $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
 
         $pdf = Pdf::loadView('admin.pdf_rekap', compact(
-            'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode'
+            'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode', 'logoData', 'globalStats'
         ))->setPaper('a4', 'portrait');
 
-        return $pdf->download("Rekap_Absensi_{$namaBulan}_{$tahun}.pdf");
+        return $pdf->download("Rekap_Admin_{$namaBulan}_{$tahun}.pdf");
     }
 
     // --- 5. VERIFIKASI PUBLIK (QR SCAN) ---

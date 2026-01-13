@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon; // Pastikan Carbon di-import
+use Carbon\Carbon;
 
 class Internship extends Model
 {
@@ -27,13 +27,13 @@ class Internship extends Model
     ];
 
     /**
-     * Menghitung total hari yang seharusnya sudah dilalui (Hari Kerja/Efektif)
-     * Digunakan untuk menghitung persentase kehadiran absolut
+     * Menghitung total hari yang seharusnya sudah dilalui (Hari Kerja Efektif)
+     * Mengeluarkan Sabtu, Minggu, dan Hari Libur Nasional dari perhitungan.
      */
     public function getTotalSeharusnyaHadir()
     {
-        $start = Carbon::parse($this->start_date);
-        $end = Carbon::parse($this->end_date);
+        $start = Carbon::parse($this->start_date)->startOfDay();
+        $end = Carbon::parse($this->end_date)->startOfDay();
         $now = Carbon::now()->startOfDay();
 
         // 1. Jika PKL belum mulai
@@ -41,13 +41,28 @@ class Internship extends Model
             return 0;
         }
 
-        // 2. Tentukan batas akhir perhitungan (Hari ini atau Tanggal Selesai PKL)
+        // 2. Tentukan batas akhir perhitungan (Hari ini atau Tanggal Selesai PKL mana yang lebih dulu)
         $tanggalAkhirHitung = $now->lt($end) ? $now : $end;
 
-        // 3. Hitung selisih hari
-        // Gunakan diffInDays() jika Sabtu-Minggu tetap dihitung masuk
-        // Gunakan diffInWeekdays() jika Sabtu-Minggu libur
-        return (int) $start->diffInDays($tanggalAkhirHitung) + 1;
+        // 3. Ambil semua daftar hari libur dari database dalam rentang waktu PKL
+        $holidays = Holiday::whereBetween('holiday_date', [
+            $start->toDateString(), 
+            $tanggalAkhirHitung->toDateString()
+        ])->pluck('holiday_date')->toArray();
+
+        /**
+         * 4. Hitung selisih hari kerja secara inklusif
+         * diffInDaysFiltered digunakan untuk  iterasi setiap hari dalam rentang tersebut
+         * Menghitung hari yang BUKAN weekend dan BUKAN hari libur nasional
+         */
+        $totalHariEfektif = $start->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
+            $dateString = $date->toDateString();
+            
+            return !$date->isWeekend() && !in_array($dateString, $holidays);
+        }, $tanggalAkhirHitung);
+
+        // Tambahkan +1 karena diffInDaysFiltered tidak menghitung hari awal secara otomatis
+        return (int) $totalHariEfektif + 1;
     }
 
     /**
