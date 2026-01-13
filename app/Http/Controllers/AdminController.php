@@ -29,7 +29,7 @@ class AdminController extends Controller
         $this->idService = $idService;
     }
 
-    // --- 1. DASHBOARD ---
+    // --- 1. Dashboard ---
     public function index()
     {
         $totalPeserta = Internship::count();
@@ -54,7 +54,7 @@ class AdminController extends Controller
         ));
     }
 
-    // --- 2. MANAJEMEN PESERTA (CRUD) ---
+    // --- 2. Manajemen Peserta ---
 
     public function indexPeserta(Request $request)
     {
@@ -175,7 +175,7 @@ class AdminController extends Controller
         return back()->with('success', 'Status peserta berhasil diperbarui.');
     }
 
-    // --- 3. ABSENSI & IZIN ---
+    // --- 3. Absensi dan Izin ---
 
     public function indexAbsensi(Request $request)
     {
@@ -242,7 +242,7 @@ class AdminController extends Controller
         return response()->json(['count' => $count]);
     }
 
-    // --- 4. REKAP & PDF ---
+    // --- 4. Rekap dan laporan pdf ---
 
     public function indexRekap(Request $request)
     {
@@ -300,7 +300,6 @@ class AdminController extends Controller
         $namaInstansi = $institution_id ? (Institution::find($institution_id)->institution_name ?? "Semua") : "Semua Instansi";
         $namaBulan = ($bulan === 'all') ? "Seluruh Bulan" : date('F', mktime(0, 0, 0, (int)$bulan, 1));
 
-        // Logo & QR Code
         $logoPath = public_path('uploads/img/logo-pln.png');
         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
         
@@ -315,7 +314,7 @@ class AdminController extends Controller
         return $pdf->download("Rekap_Admin_{$namaBulan}_{$tahun}.pdf");
     }
 
-    // --- 5. VERIFIKASI PUBLIK (QR SCAN) ---
+    // --- 5. Verifikasi publik scan QR ---
 
     public function verifyReport($hash)
     {
@@ -341,7 +340,7 @@ class AdminController extends Controller
         }
     }
 
-    // --- 6. TAMBAH CEPAT (AJAX) DENGAN ID GENERATOR ---
+    // --- 6. Tambah cepat pakai ID GENERATOR ---
 
     public function storeInstitution(Request $request)
     {

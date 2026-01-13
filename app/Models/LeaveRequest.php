@@ -15,7 +15,6 @@ class LeaveRequest extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    // Sesuaikan dengan kolom di migrasi Anda
     protected $fillable = [
         'leave_id',
         'internship_id',
@@ -27,11 +26,10 @@ class LeaveRequest extends Model
         'status'
     ];
 
-    // Karena di migrasi ada $table->timestamps()
     public $timestamps = true;
 
     /**
-     * Relasi ke Internship (Peserta yang mengajukan)
+     * Relasi ke Internship 
      */
 
     public function internship(): BelongsTo

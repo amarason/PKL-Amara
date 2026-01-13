@@ -13,7 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
-        'login_id', // Identitas utama
+        'login_id', 
         'role_id',
         'password',
         'is_active',
@@ -23,7 +23,6 @@ class User extends Authenticatable
         'password',
     ];
 
-    // Karena Anda tidak memakai remember token
     public function getRememberTokenName()
     {
         return null;
