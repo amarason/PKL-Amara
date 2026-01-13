@@ -19,6 +19,8 @@ Route::controller(AuthController::class)->group(function () {
 
 // Grup Rute Terproteksi Login (Auth)
 Route::middleware(['auth'])->group(function () {
+    Route::get('/settings', [UserController::class, 'settings'])->name('user.settings');
+    Route::post('/settings/password', [UserController::class, 'updatePassword'])->name('user.password.update');
     
     // --- RUTE VERIFIKASI PUBLIK (Bisa diakses tanpa login agar instansi luar bisa scan QR) ---
     Route::get('/verifikasi/laporan/{hash}', [AdminController::class, 'verifyReport'])->name('report.verify');
