@@ -10,12 +10,45 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    // --- Halaman ganti password ---
+    public function settings()
+    {
+        return view('user.settings');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ], [
+            'new_password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+            'new_password.min' => 'Password baru minimal harus 8 karakter.',
+        ]);
+
+        // Mengambil user ID saat ini
+        $userId = Auth::id();
+        $user = \App\Models\User::find($userId);
+
+        // Cek apakah password lama benar
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'Password lama yang Anda masukkan salah.');
+        }
+
+        // Update Password menggunakan Eloquent Model
+        $user->password = Hash::make($request->new_password);
+        $user->save(); 
+
+        return back()->with('success', 'Password berhasil diperbarui.');
+    }
+
     // --- 1. Dashboard ---
     public function index()
     {

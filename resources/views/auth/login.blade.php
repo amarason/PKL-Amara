@@ -35,6 +35,7 @@
                 <form action="{{ url('/login') }}" method="POST" class="space-y-6">
                     @csrf
                     
+                    {{-- Input ID Identitas --}}
                     <div>
                         <label class="block text-[11px] font-bold text-slate-400 uppercase mb-2 ml-1 tracking-wider">ID Identitas</label>
                         <div class="relative group">
@@ -47,6 +48,7 @@
                         </div>
                     </div>
 
+                    {{-- Input Kata Sandi dengan Toggle Password --}}
                     <div>
                         <label class="block text-[11px] font-bold text-slate-400 uppercase mb-2 ml-1 tracking-wider">Kata Sandi</label>
                         <div class="relative group">
@@ -56,6 +58,10 @@
                             <input type="password" name="password" id="password" required
                                 class="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-[#00A2E9] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
                                 placeholder="••••••••">
+                            
+                            <button type="button" onclick="togglePassword('password', 'eye-icon')" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-300 hover:text-slate-500 transition-colors">
+                                <i id="eye-icon" class="bi bi-eye-slash-fill text-xl"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -79,6 +85,23 @@
             &copy; 2026 PT PLN INDONESIA POWER UBP Semarang.
         </p>
     </div>
+
+    <script>
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(iconId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('bi-eye-slash-fill');
+                eyeIcon.classList.add('bi-eye-fill');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('bi-eye-fill');
+                eyeIcon.classList.add('bi-eye-slash-fill');
+            }
+        }
+    </script>
 
 </body>
 </html>

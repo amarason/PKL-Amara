@@ -38,6 +38,10 @@
             <a href="{{ route('user.rekap.index') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('user/rekap*') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
                 <i class="bi bi-file-earmark-text-fill mr-4"></i> Rekap Absensi
             </a>
+            <a href="{{ route('user.settings') }}" class="flex items-center space-x-3 px-6 py-4 rounded-2xl transition {{ request()->routeIs('user.settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50' }}">
+                <i class="bi bi-gear-fill"></i>
+                <span class="font-bold text-sm">Update Password</span>
+            </a>
         </nav>
     </aside>
 
