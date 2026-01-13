@@ -35,17 +35,29 @@ class UserController extends Controller
             ->where('status', 'izin')
             ->count();
 
+        // Hitung Total Alpha
+        $totalAlpha = Attendance::where('internship_id', $internship->internship_id)
+            ->where('status', 'alpha')
+            ->count();
+
         // Status absensi hari ini 
         $absensiHariIni = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', Carbon::today())
             ->first();
 
-        return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'absensiHariIni'));
+        return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'totalAlpha', 'absensiHariIni'));
     }
 
     // --- 2. Absensi kamera ---
     public function indexAbsensi()
     {
+        $today = \Carbon\Carbon::today();
+        $isHoliday = \App\Models\Holiday::whereDate('holiday_date', $today)->exists();
+
+        if ($today->isWeekend() || $isHoliday) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Hari ini adalah hari libur atau akhir pekan. Sistem presensi dinonaktifkan.');
+        }
         $internship = Internship::where('user_id', Auth::id())->first();
         $attendance = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', Carbon::today())
