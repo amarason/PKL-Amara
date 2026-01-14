@@ -242,6 +242,33 @@ class AdminController extends Controller
         return response()->json(['count' => $count]);
     }
 
+    public function updateAttendanceStatus(Request $request)
+    {
+        $request->validate([
+            'attendance_id' => 'required|exists:attendance,attendance_id',
+            'status' => 'required|in:hadir,izin,alpha',
+            'update_reason' => 'required|string|max:255',
+        ], [
+            'update_reason.required' => 'Alasan perubahan status wajib diisi'
+        ]);
+
+        try {
+            $attendance = Attendance::where('attendance_id', $request->attendance_id)->firstOrFail();
+            $admin = Auth::user();
+
+            $attendance->update([
+                'status' => $request->status,
+                'update_reason' => $request->update_reason . ' (Dikoreksi oleh Admin: ' . $admin->name . ')',
+                'updated_by' => $admin->id, 
+            ]);
+
+            return back()->with('success', 'Status kehadiran peserta berhasil diperbarui menjadi ' . strtoupper($request->status));
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui status: ' . $e->getMessage());
+        }
+    }
+
     // --- 4. Rekap dan laporan pdf ---
 
     public function indexRekap(Request $request)
@@ -344,10 +371,14 @@ class AdminController extends Controller
 
     public function storeInstitution(Request $request)
     {
-        $request->validate(['name' => 'required|unique:institution,institution_name']);
+        $request->validate([
+            'name' => 'required|unique:institution,institution_name'
+        ], [
+            'name.unique' => 'Nama instansi ini sudah terdaftar di sistem.'
+        ]);
         
         $institution = Institution::create([
-            'institution_id' => $this->idService->generateInstitutionId(), // Menggunakan Service
+            'institution_id' => $this->idService->generateInstitutionId(), 
             'institution_name' => $request->name,
         ]);
         
@@ -356,10 +387,14 @@ class AdminController extends Controller
 
     public function storeMajor(Request $request)
     {
-        $request->validate(['name' => 'required|unique:major,major_name']);
+        $request->validate([
+            'name' => 'required|unique:major,major_name'
+        ], [
+            'name.unique' => 'Nama jurusan ini sudah terdaftar di sistem.'
+        ]);
         
         $major = Major::create([
-            'major_id' => $this->idService->generateMajorId(), // Menggunakan Service
+            'major_id' => $this->idService->generateMajorId(),
             'major_name' => $request->name,
         ]);
         

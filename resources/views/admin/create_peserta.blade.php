@@ -92,14 +92,17 @@
                                 @endforeach
                             </select>
                         </div>
-                        {{-- TANGGAL --}}
+                        {{-- TANGGAL MULAI --}}
                         <div class="space-y-2">
                             <label class="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mulai</label>
-                            <input type="date" name="start_date" required class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
+                            <input type="date" name="start_date" id="start_date" required 
+                                class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
                         </div>
+                        {{-- TANGGAL SELESAI --}}
                         <div class="space-y-2">
                             <label class="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Selesai</label>
-                            <input type="date" name="end_date" required class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
+                            <input type="date" name="end_date" id="end_date" required 
+                                class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
                         </div>
                     </div>
                 </div>
@@ -191,29 +194,79 @@
     function saveNewData() {
         const type = document.getElementById('modalTarget').value;
         const name = document.getElementById('newNameInput').value.trim();
-        if (!name) { alert('Nama tidak boleh kosong'); return; }
+        
+        // Validasi input kosong dengan SweetAlert
+        if (!name) { 
+            Swal.fire({
+                icon: 'error',
+                title: 'Input Kosong',
+                text: 'Silahkan masukkan nama terlebih dahulu.',
+                confirmButtonColor: '#3B82F6',
+                customClass: { popup: 'rounded-[2rem]' }
+            });
+            return; 
+        }
 
         const url = type === 'institution' ? '{{ route("admin.institution.store") }}' : '{{ route("admin.major.store") }}';
 
+        Swal.fire({
+            title: 'Menyimpan...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading() }
+        });
+
         fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json', 
+                'X-CSRF-TOKEN': '{{ csrf_token() }}' 
+            },
             body: JSON.stringify({ name })
         })
         .then(async res => {
+            const data = await res.json();
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || 'Gagal menyimpan data');
+                throw new Error(data.message || 'Gagal menyimpan data');
             }
-            return res.json();
+            return data;
         })
         .then(data => {
-            const select = document.getElementById(type + '_select');
-            const option = new Option(data.name, data.id, true, true);
-            select.add(option);
+            // Notifikasi Sukses
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil Ditambahkan',
+                text: `${data.name} telah terdaftar.`,
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-[2rem]' }
+            });
+
+            // Update dropdown
+            if (typeof selectInst !== 'undefined' && type === 'institution') {
+                selectInst.addOption({value: data.id, text: data.name});
+                selectInst.addItem(data.id);
+            } else if (typeof selectMajor !== 'undefined' && type === 'major') {
+                selectMajor.addOption({value: data.id, text: data.name});
+                selectMajor.addItem(data.id);
+            } else {
+                const select = document.getElementById(type + '_select');
+                const option = new Option(data.name, data.id, true, true);
+                select.add(option);
+            }
+            
             closeModal();
         })
-        .catch(err => alert(err.message));
+        .catch(err => {
+            // Notifikasi eror
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Menyimpan',
+                text: err.message, 
+                confirmButtonColor: '#EF4444',
+                customClass: { popup: 'rounded-[2rem]' }
+            });
+        });
     }
 
     // --- Logika Konfirmasi Reset ---
@@ -233,5 +286,40 @@
         document.getElementById('pendaftaranForm').reset();
         closeResetModal();
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+
+    startDateInput.addEventListener('change', function() {
+        // Ambil nilai tanggal mulai yang baru dipilih
+        const startDateValue = this.value;
+
+        if (startDateValue) {
+            // Set batas minimal (min) pada tanggal selesai
+            endDateInput.min = startDateValue;
+
+            // Jika tanggal selesai sudah terisi dan ternyata lebih kecil dari mulai, kosongkan
+            if (endDateInput.value && endDateInput.value < startDateValue) {
+                endDateInput.value = '';
+                
+                // Notifikasi opsional agar admin tahu kenapa terhapus
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Tanggal Selesai disesuaikan',
+                    text: 'Tidak boleh mendahului tanggal mulai.'
+                });
+            }
+        }
+    });
+});
 </script>
 @endsection

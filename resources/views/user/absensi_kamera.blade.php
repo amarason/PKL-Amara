@@ -27,12 +27,16 @@
             </div>
         @else
             <div id="my_camera" class="rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner bg-slate-100 mx-auto"></div>
+            
             <div id="results" class="hidden rounded-[2rem] overflow-hidden border-4 border-blue-500 shadow-lg mx-auto"></div>
 
             <div class="mt-10 flex flex-col sm:flex-row gap-4 w-full justify-center">
-                <button id="btn-capture" onclick="take_snapshot()" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">
-                    <i class="bi bi-camera-fill mr-2"></i> 
-                    {{ !$attendance ? 'Ambil Foto & Absen Masuk' : 'Ambil Foto & Absen Pulang' }}
+                <button id="btn-snapshot" onclick="take_snapshot()" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">
+                    <i class="bi bi-camera-fill mr-2"></i> Ambil Foto
+                </button>
+
+                <button id="btn-confirm" onclick="send_data()" class="hidden bg-emerald-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-100">
+                    <i class="bi bi-check-circle-fill mr-2"></i> Konfirmasi & Kirim
                 </button>
                 
                 <button id="btn-reset" onclick="reset_camera()" class="hidden bg-slate-100 text-slate-600 px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
@@ -51,85 +55,80 @@
     const routeMasuk = "{{ route('user.absensi.masuk') }}";
     const routePulang = "{{ route('user.absensi.pulang') }}";
     const csrfToken = "{{ csrf_token() }}";
-
-    // Inisialisasi Webcam
+    let imageData = ""; 
+    
     if (!hasCheckOut) {
         Webcam.set({
-            width: 400,
-            height: 400,
-            dest_width: 640,
-            dest_height: 640,
-            image_format: 'jpeg',
-            jpeg_quality: 90,
-            constraints: { 
-                facingMode: 'user' 
-            }
+            width: 400, height: 400, dest_width: 640, dest_height: 640,
+            image_format: 'jpeg', jpeg_quality: 90,
+            constraints: { facingMode: 'user' }
         });
         Webcam.attach('#my_camera');
     }
 
-    // Fungsi Ambil Foto
     function take_snapshot() {
         Webcam.snap(function(data_uri) {
+            imageData = data_uri; 
+       
             document.getElementById('my_camera').classList.add('hidden');
+            document.getElementById('btn-snapshot').classList.add('hidden');
+        
             document.getElementById('results').innerHTML = '<img src="'+data_uri+'" class="w-[400px] h-[400px] object-cover"/>';
             document.getElementById('results').classList.remove('hidden');
-            
-            const btnCapture = document.getElementById('btn-capture');
-            btnCapture.innerHTML = '<i class="bi bi-cloud-upload-fill mr-2"></i> Mengirim...';
-            btnCapture.disabled = true;
+            document.getElementById('btn-confirm').classList.remove('hidden');
             document.getElementById('btn-reset').classList.remove('hidden');
-
-            const targetRoute = !hasAttendance ? routeMasuk : routePulang;
-
-            // Kirim data ke Server
-            fetch(targetRoute, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken
-                },
-                body: JSON.stringify({ photo: data_uri })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.success,
-                        showConfirmButton: false,
-                        timer: 2000,
-                        customClass: { popup: 'rounded-[2rem]' }
-                    }).then(() => {
-                        window.location.href = "{{ route('user.dashboard') }}";
-                    });
-                } else {
-                    throw new Error(data.error || 'Terjadi kesalahan sistem');
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: err.message,
-                    customClass: { popup: 'rounded-[2rem]' }
-                });
-                reset_camera();
-            });
         });
     }
 
-    // Fungsi Reset Kamera
     function reset_camera() {
+        imageData = "";
         document.getElementById('my_camera').classList.remove('hidden');
-        document.getElementById('results').classList.add('hidden');
-        document.getElementById('btn-reset').classList.add('hidden');
+        document.getElementById('btn-snapshot').classList.remove('hidden');
         
-        const btnCapture = document.getElementById('btn-capture');
-        const btnText = !hasAttendance ? 'Ambil Foto & Absen Masuk' : 'Ambil Foto & Absen Pulang';
-        btnCapture.innerHTML = '<i class="bi bi-camera-fill mr-2"></i> ' + btnText;
-        btnCapture.disabled = false;
+        document.getElementById('results').classList.add('hidden');
+        document.getElementById('btn-confirm').classList.add('hidden');
+        document.getElementById('btn-reset').classList.add('hidden');
+    }
+
+    function send_data() {
+        const btnConfirm = document.getElementById('btn-confirm');
+        const btnReset = document.getElementById('btn-reset');
+        
+        btnConfirm.innerHTML = '<i class="bi bi-cloud-upload-fill mr-2"></i> Mengirim...';
+        btnConfirm.disabled = true;
+        btnReset.classList.add('hidden');
+
+        const targetRoute = !hasAttendance ? routeMasuk : routePulang;
+
+        fetch(targetRoute, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken
+            },
+            body: JSON.stringify({ photo: imageData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                Swal.fire({
+                    icon: 'success', title: 'Berhasil!', text: data.success,
+                    showConfirmButton: false, timer: 2000,
+                    customClass: { popup: 'rounded-[2rem]' }
+                }).then(() => {
+                    window.location.href = "{{ route('user.dashboard') }}";
+                });
+            } else {
+                throw new Error(data.error || 'Terjadi kesalahan sistem');
+            }
+        })
+        .catch(err => {
+            Swal.fire({
+                icon: 'error', title: 'Gagal!', text: err.message,
+                customClass: { popup: 'rounded-[2rem]' }
+            });
+            reset_camera();
+        });
     }
 </script>
 @endsection
