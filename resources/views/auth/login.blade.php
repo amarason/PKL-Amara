@@ -75,7 +75,7 @@
 
                 <div class="mt-12 text-center">
                     <p class="text-[10px] text-slate-300 font-medium leading-relaxed italic">
-                        Gunakan ID PKL sebagai password default pada login pertama kali. Pastikan segera mengganti password Anda. Hubungi Admin jika terkendala.
+                        Gunakan ID PKL sebagai password default pada login pertama kali. Pastikan segera mengganti password Anda. 
                     </p>
                 </div>
             </div>

@@ -51,10 +51,6 @@ Route::middleware(['auth'])->group(function () {
         // Fitur Rekap & Download Laporan
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
-
-        // Fitur reset password peserta
-        Route::post('/admin/peserta/reset-password/{internship_id}', [AdminController::class, 'resetPassword'])
-         ->name('admin.peserta.reset');
     });
 
     // --- 2. Grup rute khusus peserta PKL ---
