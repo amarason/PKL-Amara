@@ -37,12 +37,12 @@
             <a href="{{ route('admin.peserta.index', ['status' => 'aktif']) }}"
                class="px-8 py-3 rounded-xl text-xs font-bold transition whitespace-nowrap
                {{ $status == 'aktif' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">
-                Peserta Aktif
+                 Peserta Aktif
             </a>
             <a href="{{ route('admin.peserta.index', ['status' => 'selesai']) }}"
                class="px-8 py-3 rounded-xl text-xs font-bold transition whitespace-nowrap
                {{ $status == 'selesai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600' }}">
-                Peserta Selesai
+                 Peserta Selesai
             </a>
         </div>
     </div>
@@ -80,25 +80,41 @@
                             {{ \Carbon\Carbon::parse($row->end_date)->format('d M y') }}
                         </td>
                         <td class="px-6 sm:px-8 py-5 text-center whitespace-nowrap">
-                            @if($status == 'aktif')
-                            <form id="form-selesai-{{ $row->internship_id }}"
-                                  action="{{ route('admin.peserta.updateStatus', $row->internship_id) }}"
-                                  method="POST" class="inline">
-                                @csrf
-                                <input type="hidden" name="status" value="selesai">
-                                <button type="button"
-                                        onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')"
-                                        class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-600 hover:text-white transition">
-                                    Selesai
-                                </button>
-                            </form>
-                            @endif
+                            <div class="flex items-center justify-center gap-2">
+                                {{-- Tombol Selesai (Hanya jika status aktif) --}}
+                                @if($status == 'aktif')
+                                <form id="form-selesai-{{ $row->internship_id }}"
+                                      action="{{ route('admin.peserta.updateStatus', $row->internship_id) }}"
+                                      method="POST" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="status" value="selesai">
+                                    <button type="button"
+                                            onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')"
+                                            class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-600 hover:text-white transition">
+                                        Selesai
+                                    </button>
+                                </form>
+                                @endif
 
-                            <button type="button"
-                                    onclick="openEditModal('{{ $row->internship_id }}')"
-                                    class="ml-2 text-slate-300 hover:text-blue-500 transition">
-                                <i class="bi bi-pencil-square text-lg"></i>
-                            </button>
+                                {{-- Tombol Reset Password --}}
+                                <form id="form-reset-{{ $row->internship_id }}" 
+                                      action="{{ route('admin.peserta.reset', $row->internship_id) }}" 
+                                      method="POST" class="inline">
+                                    @csrf
+                                    <button type="button" 
+                                            onclick="confirmReset('{{ $row->internship_id }}', '{{ $row->user->name }}', '{{ $row->user->login_id }}')"
+                                            class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-red-600 hover:text-white transition">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Reset Pass
+                                    </button>
+                                </form>
+
+                                {{-- Tombol Edit --}}
+                                <button type="button"
+                                        onclick="openEditModal('{{ $row->internship_id }}')"
+                                        class="ml-1 text-slate-300 hover:text-blue-500 transition">
+                                    <i class="bi bi-pencil-square text-lg"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -178,6 +194,30 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // Fungsi Konfirmasi Reset Password
+    function confirmReset(id, nama, loginId) {
+        Swal.fire({
+            title: 'Reset Password?',
+            text: `Password ${nama} akan dikembalikan ke default (${loginId}). Lanjutkan?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444', 
+            cancelButtonColor: '#94A3B8',
+            confirmButtonText: 'Ya, Reset!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-[2rem]',
+                confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase text-xs tracking-widest',
+                cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase text-xs tracking-widest'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('form-reset-' + id).submit();
+            }
+        })
+    }
+
+    // Fungsi Konfirmasi Selesai PKL
     function confirmSelesai(id, nama) {
         Swal.fire({
             title: 'Konfirmasi Selesai',
@@ -201,7 +241,6 @@
     }
 
     function openEditModal(id) {
-        // encodeURIComponent akan mengubah 'PKL/S1/001' menjadi 'PKL%2FS1%2F001'
         const encodedId = encodeURIComponent(id);
         
         fetch(`/admin/peserta/edit/${encodedId}`)
@@ -228,7 +267,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
-                    text: 'Tidak dapat mengambil data peserta. Pastikan koneksi stabil.',
+                    text: 'Tidak dapat mengambil data peserta.',
                     customClass: { popup: 'rounded-[2rem]' }
                 });
             });
@@ -240,6 +279,7 @@
         modal.classList.remove('flex');
     }
 
+    // Tampilkan Notifikasi Sukses
     const successMsg = "{{ session('success') }}";
     if (successMsg) {
         Swal.fire({

@@ -27,25 +27,34 @@ Route::middleware(['auth'])->group(function () {
 
     // --- 1. Grup rute khusus admin ---
     Route::middleware(['role:ROLE_ADMIN'])->prefix('admin')->group(function () {
+        // Dashboard Admin
         Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::get('/peserta/manajemen', [AdminController::class, 'indexPeserta'])->name('admin.peserta.index');
         Route::get('/peserta/tambah', [AdminController::class, 'create'])->name('admin.peserta.create');
         Route::post('/peserta/simpan', [AdminController::class, 'store'])->name('admin.peserta.store');
 
+        // Fitur Manajemen Peserta
         Route::get('/peserta/edit/{id}', [AdminController::class, 'editPeserta'])->name('admin.peserta.edit')->where('id', '.*');
         Route::post('/peserta/update/{id}', [AdminController::class, 'updatePeserta'])->name('admin.peserta.update')->where('id', '.*');
         Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateStatus'])->name('admin.peserta.updateStatus')->where('id', '.*');
 
+        // Fitur Manajemen Instansi & Jurusan
         Route::post('/institution/quick-store', [AdminController::class, 'storeInstitution'])->name('admin.institution.store');
         Route::post('/major/quick-store', [AdminController::class, 'storeMajor'])->name('admin.major.store');
 
+        // Fitur Manajemen Izin & Absensi
         Route::get('/absensi', [AdminController::class, 'indexAbsensi'])->name('admin.absensi.index');
         Route::post('/izin/verifikasi/{id}', [AdminController::class, 'verifyLeave'])->name('admin.izin.verify');
         Route::post('/absensi/update-status', [AdminController::class, 'updateAttendanceStatus'])->name('admin.absensi.updateStatus');
         Route::get('/check-notifications', [AdminController::class, 'checkNotification'])->name('admin.notification.check');
 
+        // Fitur Rekap & Download Laporan
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
+
+        // Fitur reset password peserta
+        Route::post('/admin/peserta/reset-password/{internship_id}', [AdminController::class, 'resetPassword'])
+         ->name('admin.peserta.reset');
     });
 
     // --- 2. Grup rute khusus peserta PKL ---

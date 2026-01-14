@@ -365,4 +365,22 @@ class AdminController extends Controller
         
         return response()->json(['id' => $major->major_id, 'name' => $major->major_name]);
     }
+
+    // --- 7. Reset Password Peserta ---
+    public function resetPassword($internship_id)
+    {
+        // Cari data internship dengan relasi user
+        $internship = Internship::with('user')->findOrFail($internship_id);
+        $user = $internship->user;
+
+        if (!$user) {
+            return back()->with('error', 'Data User tidak ditemukan.');
+        }
+
+        // 2. Update password user menggunakan login_id-
+        $user->password = Hash::make($user->login_id);
+        $user->save();
+
+        return back()->with('success', "Password untuk {$user->name} berhasil direset ke default: {$user->login_id}");
+    }
 }
