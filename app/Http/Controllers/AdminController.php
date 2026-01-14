@@ -301,45 +301,60 @@ class AdminController extends Controller
         $bulan = $request->get('bulan', date('m'));
         $tahun = $request->get('tahun', date('Y'));
         $institution_id = $request->get('institution_id');
+        $search = $request->get('search'); 
 
-        // Query Data Peserta
         $query = Internship::with(['user', 'institution', 'attendance' => function($q) use ($bulan, $tahun) {
             if ($bulan && $bulan !== 'all') $q->whereMonth('attendance_date', $bulan);
             $q->whereYear('attendance_date', $tahun);
         }]);
 
         if ($institution_id) $query->where('institution_id', $institution_id);
+
+        if ($search) {
+            $query->whereHas('user', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('login_id', 'like', "%{$search}%");
+            });
+        }
+
         $peserta = $query->where('status', 'aktif')->get();
 
-        // Hitung Ringkasan Keaktifan Seluruh Peserta
+        // Hitung Ringkasan Statistik
         $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
         foreach($peserta as $p) {
             $globalStats['hadir'] += $p->attendance->where('status', 'hadir')->count();
             $globalStats['izin'] += $p->attendance->where('status', 'izin')->count();
-    
-            if ($bulan == 'all') {
-                $globalStats['alpha'] += max(0, $p->getTotalSeharusnyaHadir() - ($p->attendance->whereIn('status', ['hadir', 'izin'])->count()));
-            } else {
-                $globalStats['alpha'] += $p->attendance->where('status', 'alpha')->count();
-            }
+            $globalStats['alpha'] += ($bulan == 'all') ? 0 : $p->attendance->where('status', 'alpha')->count();
         }
 
         $namaInstansi = $institution_id ? (Institution::find($institution_id)->institution_name ?? "Semua") : "Semua Instansi";
         $namaBulan = ($bulan === 'all') ? "Seluruh Bulan" : date('F', mktime(0, 0, 0, (int)$bulan, 1));
+        
+        // Jika sedang mencari peserta tertentu, tambahkan info di judul laporan
+        $subJudul = $search ? "Hasil Pencarian: '$search'" : "Semua Peserta";
 
-        $logoPath = public_path('uploads/img/logo-pln.png');
+        $logoPath = public_path('uploads/img/logo-plnIP.png');
         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
         
-        $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun);
+        $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun . '|' . $search);
         $verifyUrl = route('report.verify', ['hash' => $hash]);
         $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
 
         $pdf = Pdf::loadView('admin.pdf_rekap', compact(
-            'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode', 'logoData', 'globalStats'
+            'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode', 'logoData', 'globalStats', 'subJudul'
         ))->setPaper('a4', 'portrait');
 
-        return $pdf->download("Rekap_Admin_{$namaBulan}_{$tahun}.pdf");
-    }
+        // Penamaan File 
+        if ($peserta->count() === 1) {
+            $namaSubjek = str_replace(' ', '_', $peserta->first()->user->name);
+        } else {
+            $namaSubjek = "Semua_Peserta";
+        }
+
+        $fileName = "Rekap_Absensi_{$namaSubjek}_{$namaBulan}_{$tahun}.pdf";
+
+        return $pdf->download($fileName);
+        }
 
     // --- 5. Verifikasi publik scan QR ---
 

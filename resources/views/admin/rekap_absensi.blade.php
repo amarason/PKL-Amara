@@ -41,7 +41,7 @@
                         @endfor
                     </select>
                     <select name="tahun" class="w-full bg-slate-50 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4">
-                        @for($y = date('Y'); $y >= 2024; $y--)
+                        @for($y = date('Y'); $y >= 2026; $y--)
                             <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                     </select>
@@ -52,9 +52,19 @@
                 <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                     Filter
                 </button>
-                <a href="{{ route('admin.rekap.pdf', request()->all()) }}" target="_blank"
-                   class="flex-1 bg-red-500 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-100 text-center flex items-center justify-center">
-                    PDF
+
+                @if(request('search') || request('institution_id') || request('bulan') != date('m') || request('tahun') != date('Y'))
+                    <a href="{{ route('admin.rekap.index') }}" 
+                    class="bg-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-300 transition-all shadow-sm flex items-center justify-center"
+                    title="Bersihkan Filter">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                @endif
+                
+                <a href="{{ route('admin.rekap.pdf', request()->all()) }}" 
+                target="_blank"
+                class="flex-1 bg-red-500 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-100 text-center flex items-center justify-center">
+                    <i class="bi bi-file-pdf mr-2"></i> PDF
                 </a>
             </div>
         </form>
