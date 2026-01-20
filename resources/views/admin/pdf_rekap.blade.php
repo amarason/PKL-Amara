@@ -56,13 +56,11 @@
                     @php
                         $h = $p->attendance->where('status', 'hadir')->count();
                         $i = $p->attendance->where('status', 'izin')->count();
-                        if ($bulan == 'all') {
-                            $totalSeharusnya = $p->getTotalSeharusnyaHadir();
-                            $a = max(0, $totalSeharusnya - ($h + $i));
-                        } else {
-                            $a = $p->attendance->where('status', 'alpha')->count();
-                            $totalSeharusnya = $h + $i + $a;
-                        }
+
+                        $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
+                        
+                        $a = max(0, $totalSeharusnya - ($h + $i));
+
                         $persen = $totalSeharusnya > 0 ? min(100, round(($h / $totalSeharusnya) * 100)) : 0;
                     @endphp
                     <tr>
@@ -93,7 +91,6 @@
                     <img src="data:image/svg+xml;base64,{{ $qrcode }}" width="80">
                 </div>
                 <p><strong><u>{{ auth()->user()->name }}</u></strong></p>
-                {{-- <p>NIP/ID: {{ auth()->user()->login_id }}</p> --}}
             </div>
             <div class="clear"></div>
         </div>

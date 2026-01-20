@@ -53,30 +53,17 @@ class UserController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $internship = Internship::where('user_id', $user->id)->first();
+        $internship = Internship::with('user')->where('user_id', $user->id)->first();
+        if (!$internship) return "Data tidak ditemukan.";
 
-        if (!$internship) {
-            return "Data Internship tidak ditemukan. Pastikan data peserta sudah terdaftar.";
-        }
+        $totalHadir = Attendance::where('internship_id', $internship->internship_id)->where('status', 'hadir')->count();
+        $totalIzin = Attendance::where('internship_id', $internship->internship_id)->where('status', 'izin')->count();
 
-        // Statistik untuk widget dashboard
-        $totalHadir = Attendance::where('internship_id', $internship->internship_id)
-            ->where('status', 'hadir')
-            ->count();
+        $seharusnyaHadir = $internship->getTotalSeharusnyaHadir();
+        $totalAlpha = max(0, $seharusnyaHadir - ($totalHadir + $totalIzin));
 
-        $totalIzin = Attendance::where('internship_id', $internship->internship_id)
-            ->where('status', 'izin')
-            ->count();
-
-        // Hitung Total Alpha
-        $totalAlpha = Attendance::where('internship_id', $internship->internship_id)
-            ->where('status', 'alpha')
-            ->count();
-
-        // Status absensi hari ini 
         $absensiHariIni = Attendance::where('internship_id', $internship->internship_id)
-            ->whereDate('attendance_date', Carbon::today())
-            ->first();
+            ->whereDate('attendance_date', Carbon::today())->first();
 
         return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'totalAlpha', 'absensiHariIni'));
     }
@@ -268,24 +255,25 @@ class UserController extends Controller
     public function indexRekap(Request $request)
     {
         $user = Auth::user();
-        $internship = Internship::where('user_id', $user->id)->first();
-
+        $internship = Internship::with('user')->where('user_id', $user->id)->first();
         $month = $request->get('month');
         $year = $request->get('year', date('Y'));
 
         $query = Attendance::where('internship_id', $internship->internship_id);
-
         if ($month) {
             $query->whereMonth('attendance_date', $month)->whereYear('attendance_date', $year);
         }
-
         $attendances = $query->orderBy('attendance_date', 'desc')->get();
 
         $stats = [
             'hadir' => $attendances->where('status', 'hadir')->count(),
             'izin'  => $attendances->where('status', 'izin')->count(),
-            'alpha' => $attendances->where('status', 'alpha')->count(),
+            'alpha' => 0
         ];
+
+        // Sinkronisasi Alpha Rekap Peserta
+        $seharusnya = $internship->getTotalSeharusnyaHadir($month, $year);
+        $stats['alpha'] = max(0, $seharusnya - ($stats['hadir'] + $stats['izin']));
 
         return view('user.rekap', compact('internship', 'attendances', 'stats', 'month', 'year'));
     }

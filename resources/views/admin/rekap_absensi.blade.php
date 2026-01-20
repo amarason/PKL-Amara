@@ -90,31 +90,35 @@
                             $hadir = $p->attendance->where('status', 'hadir')->count();
                             $izin = $p->attendance->where('status', 'izin')->count();
                             
-                            if ($bulan == 'all') {
-                                $totalSeharusnya = $p->getTotalSeharusnyaHadir();
-                                $alpha = max(0, $totalSeharusnya - ($hadir + $izin));
-                            } else {
-                                $alpha = $p->attendance->where('status', 'alpha')->count();
-                                $totalSeharusnya = $hadir + $izin + $alpha;
-                            }
-                            $persentase = $totalSeharusnya > 0 ? min(100, round((($hadir / $totalSeharusnya) * 100))) : 0;
+                            $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
+                            
+                            $alpha = max(0, $totalSeharusnya - ($hadir + $izin));
+                
+                            $persentase = $totalSeharusnya > 0 ? min(100, round(($hadir / $totalSeharusnya) * 100)) : 0;
                         @endphp
+
                         <tr class="hover:bg-slate-50/50 transition-all">
                             <td class="px-6 py-5">
                                 <p class="font-bold text-slate-800 text-sm leading-none">{{ $p->user->name }}</p>
                                 <p class="text-[10px] text-blue-500 font-black tracking-tighter mt-1">{{ $p->user->login_id }}</p>
                             </td>
                             <td class="px-6 py-5">
-                                <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase italic">{{ $p->institution->institution_name }}</span>
+                                <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase italic">
+                                    {{ $p->institution->institution_name }}
+                                </span>
                             </td>
                             <td class="px-6 py-5 text-center font-black text-green-500 text-sm">{{ $hadir }}</td>
                             <td class="px-6 py-5 text-center font-black text-blue-500 text-sm">{{ $izin }}</td>
                             <td class="px-6 py-5 text-center font-black text-red-500 text-sm">{{ $alpha }}</td>
                             <td class="px-6 py-5 text-center">
                                 <div class="flex flex-col items-center">
-                                    <span class="text-[10px] font-black {{ $persentase >= 80 ? 'text-green-500' : 'text-amber-500' }}">{{ $persentase }}%</span>
+                                    <span class="text-[10px] font-black {{ $persentase >= 80 ? 'text-green-500' : 'text-amber-500' }}">
+                                        {{ $persentase }}%
+                                    </span>
                                     <div class="w-20 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-                                       <div class="{{ $persentase >= 80 ? 'bg-green-500' : 'bg-amber-500' }} h-full" @style(["width: $persentase%"])>
+                                    <div class="{{ $persentase >= 80 ? 'bg-green-500' : 'bg-amber-500' }} h-full" 
+                                            style="width: {{ $persentase }}%">
+                                    </div>
                                     </div>
                                 </div>
                             </td>

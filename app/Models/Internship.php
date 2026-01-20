@@ -29,38 +29,46 @@ class Internship extends Model
     /**
      * Menghitung total hari kerja efektif selama periode PKL (selain Sabtu, Minggu, dan Hari Libur Nasional)
      */
-    public function getTotalSeharusnyaHadir()
+    public function getTotalSeharusnyaHadir($bulan = null, $tahun = null)
     {
-        $start = Carbon::parse($this->start_date)->startOfDay();
-        $end = Carbon::parse($this->end_date)->startOfDay();
+        $internStart = Carbon::parse($this->start_date)->startOfDay();
+        // Ambil tanggal pembuatan akun peserta
+        $accountCreated = Carbon::parse($this->user->created_at)->startOfDay();
+        $internEnd = Carbon::parse($this->end_date)->endOfDay();
         $now = Carbon::now()->startOfDay();
 
-        // 1. Jika PKL belum mulai
-        if ($now->lt($start)) {
+        /** Titik awal perhitungan adalah tanggal yang paling terakhir antara 
+         * Tanggal Mulai PKL atau Tanggal Akun Dibuat.
+         */
+        $effectiveStart = $internStart->gt($accountCreated) ? $internStart : $accountCreated;
+
+        if ($bulan && $tahun) {
+            $monthStart = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+            $monthEnd = Carbon::create($tahun, $bulan, 1)->endOfMonth();
+
+            // Perhitungan tetap di dalam masa aktif akun dan masa PKL
+            $start = $effectiveStart->gt($monthStart) ? $effectiveStart : $monthStart;
+            $limit = $internEnd->lt($monthEnd) ? $internEnd : $monthEnd;
+        } else {
+            $start = $effectiveStart;
+            $limit = $internEnd;
+        }
+
+        $finalLimit = $now->lt($limit) ? $now : $limit;
+
+        if ($start->gt($finalLimit)) {
             return 0;
         }
 
-        // 2. Tentukan batas akhir perhitungan (Hari ini atau Tanggal Selesai PKL mana yang lebih dulu)
-        $tanggalAkhirHitung = $now->lt($end) ? $now : $end;
-
-        // 3. Ambil semua daftar hari libur dari database dalam rentang waktu PKL
         $holidays = Holiday::whereBetween('holiday_date', [
             $start->toDateString(), 
-            $tanggalAkhirHitung->toDateString()
+            $finalLimit->toDateString()
         ])->pluck('holiday_date')->toArray();
 
-        /**
-         * 4. Hitung selisih hari kerja secara inklusif
-         * diffInDaysFiltered =  iterasi setiap hari dalam rentang tersebut
-         * Menghitung hari yang BUKAN weekend dan BUKAN hari libur nasional
-         */
         $totalHariEfektif = $start->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
-            $dateString = $date->toDateString();
-            
-            return !$date->isWeekend() && !in_array($dateString, $holidays);
-        }, $tanggalAkhirHitung);
+            return !$date->isWeekend() && !in_array($date->toDateString(), $holidays);
+        }, $finalLimit);
 
-        // Tambahkan +1 karena diffInDaysFiltered tidak menghitung hari awal secara otomatis
         return (int) $totalHariEfektif + 1;
     }
 

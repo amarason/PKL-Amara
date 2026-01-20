@@ -322,9 +322,16 @@ class AdminController extends Controller
         // Hitung Ringkasan Statistik
         $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
         foreach($peserta as $p) {
-            $globalStats['hadir'] += $p->attendance->where('status', 'hadir')->count();
-            $globalStats['izin'] += $p->attendance->where('status', 'izin')->count();
-            $globalStats['alpha'] += ($bulan == 'all') ? 0 : $p->attendance->where('status', 'alpha')->count();
+            $hCount = $p->attendance->where('status', 'hadir')->count();
+            $iCount = $p->attendance->where('status', 'izin')->count();
+            
+            $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
+            
+            $globalStats['hadir'] += $hCount;
+            $globalStats['izin'] += $iCount;
+            
+            // Alpha = selisih: Total Seharusnya - (Hadir + Izin)
+            $globalStats['alpha'] += max(0, $totalSeharusnya - ($hCount + $iCount));
         }
 
         $namaInstansi = $institution_id ? (Institution::find($institution_id)->institution_name ?? "Semua") : "Semua Instansi";
