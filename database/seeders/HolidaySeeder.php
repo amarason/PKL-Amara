@@ -15,7 +15,7 @@ class HolidaySeeder extends Seeder
      */
     public function run(): void
     {
-        // Kita ambil data untuk tahun 2025 dan 2026
+        // Ambil data tahun 2025 dan 2026
         $years = [2025, 2026];
 
         foreach ($years as $year) {

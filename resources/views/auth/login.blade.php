@@ -81,9 +81,14 @@
             </div>
         </div>
         
-        <p class="text-center mt-10 text-slate-400 text-[10px] font-semibold tracking-widest uppercase">
-            &copy; 2026 PT PLN INDONESIA POWER UBP Semarang.
-        </p>
+        <div class="text-center mt-10 space-y-1">
+            <p class="text-slate-400 text-[10px] font-semibold tracking-widest uppercase">
+                &copy; PT PLN INDONESIA POWER UBP Semarang
+            </p>
+            <p class="text-slate-300 text-[9px] font-medium tracking-wider uppercase">
+                Amara Putri Soniaji - PKL 2026
+            </p>
+        </div>
     </div>
 
     <script>

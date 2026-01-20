@@ -97,7 +97,7 @@
                                 $alpha = $p->attendance->where('status', 'alpha')->count();
                                 $totalSeharusnya = $hadir + $izin + $alpha;
                             }
-                            $persentase = $totalSeharusnya > 0 ? min(100, round(($hadir / $totalSeharusnya) * 100)) : 0;
+                            $persentase = $totalSeharusnya > 0 ? min(100, round((($hadir / $totalSeharusnya) * 100))) : 0;
                         @endphp
                         <tr class="hover:bg-slate-50/50 transition-all">
                             <td class="px-6 py-5">

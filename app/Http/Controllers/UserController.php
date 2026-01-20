@@ -103,10 +103,18 @@ class UserController extends Controller
     public function storeMasuk(Request $request)
     {
         try {
+            $now = Carbon::now();
+            $jam = $now->format('H:i');
+
+            // Validasi Waktu: 06:00 - 10:00
+            if ($jam < '06:00' || $jam > '10:00') {
+                return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 06:00 - 10:00 WIB.'], 403);
+            }
+
             $request->validate(['photo' => 'required']); 
             $internship = Internship::where('user_id', Auth::id())->first();
 
-            // Cek Keberadaan Data
+            // Cek apakah sudah absen hari ini
             $existing = Attendance::where('internship_id', $internship->internship_id)
                 ->whereDate('attendance_date', Carbon::today())
                 ->first();
@@ -115,38 +123,23 @@ class UserController extends Controller
                 return response()->json(['error' => 'Anda sudah tercatat hadir hari ini.'], 400);
             }
 
-            $image = $request->photo; 
-            if (preg_match('/^data:image\/(\w+);base64,/', $image, $type)) {
-                $image = substr($image, strpos($image, ',') + 1);
-                $type = strtolower($type[1]); // jpg, png, etc
-
-                if (!in_array($type, ['jpg', 'jpeg', 'png'])) {
-                    throw new \Exception('Format gambar tidak valid.');
-                }
-                $image = str_replace(' ', '+', $image);
-            } else {
-                throw new \Exception('Data gambar tidak valid.');
-            }
-
-            $safeId = Str::slug($internship->internship_id);
+            $image = $request->photo;
+            $image = str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image);
+            $safeId = \Illuminate\Support\Str::slug($internship->internship_id);
             $imageName = 'in_' . $safeId . '_' . time() . '.jpg';
 
-            if (!file_exists(public_path('uploads/attendance'))) {
-                mkdir(public_path('uploads/attendance'), 0777, true);
-            }
-
-            Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
+            \Illuminate\Support\Facades\Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
 
             Attendance::create([
-                'attendance_id' => 'ATT-' . strtoupper(Str::random(7)),
+                'attendance_id' => 'ATT-' . strtoupper(\Illuminate\Support\Str::random(7)),
                 'internship_id' => $internship->internship_id,
                 'attendance_date' => Carbon::today(),
-                'check_in_time' => Carbon::now()->toTimeString(),
+                'check_in_time' => $now->toTimeString(),
                 'check_in_photo' => 'uploads/attendance/' . $imageName,
                 'status' => 'hadir'
             ]);
 
-            return response()->json(['success' => 'Berhasil absen masuk!']);
+            return response()->json(['success' => 'Berhasil absen masuk tepat waktu!']);
 
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -156,35 +149,47 @@ class UserController extends Controller
     // --- 4. Simpan Absen Pulang  ---
     public function storePulang(Request $request)
     {
-        $request->validate(['photo' => 'required']);
-        
-        $internship = Internship::where('user_id', Auth::id())->first();
-        $attendance = Attendance::where('internship_id', $internship->internship_id)
-            ->whereDate('attendance_date', Carbon::today())
-            ->first();
+        try {
+            $now = Carbon::now();
+            $jam = $now->format('H:i');
 
-        if (!$attendance) {
-            return response()->json(['error' => 'Anda belum absen masuk!'], 400);
+            // Validasi Waktu: 16:00 - 23:59
+            if ($jam < '16:00') {
+                return response()->json(['error' => 'Belum waktunya pulang! Absen pulang dimulai pukul 16:00 WIB.'], 403);
+            }
+
+            $request->validate(['photo' => 'required']);
+            $internship = Internship::where('user_id', Auth::id())->first();
+            
+            $attendance = Attendance::where('internship_id', $internship->internship_id)
+                ->whereDate('attendance_date', Carbon::today())
+                ->first();
+
+            if (!$attendance) {
+                return response()->json(['error' => 'Gagal! Anda harus absen masuk terlebih dahulu.'], 400);
+            }
+
+            if ($attendance->check_out_time) {
+                return response()->json(['error' => 'Anda sudah absen pulang hari ini.'], 400);
+            }
+
+            $image = $request->photo;
+            $image = str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image);
+            $safeId = \Illuminate\Support\Str::slug($internship->internship_id);
+            $imageName = 'out_' . $safeId . '_' . time() . '.jpg';
+            
+            \Illuminate\Support\Facades\Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
+
+            $attendance->update([
+                'check_out_time' => $now->toTimeString(),
+                'check_out_photo' => 'uploads/attendance/' . $imageName,
+            ]);
+
+            return response()->json(['success' => 'Berhasil absen pulang, hati-hati di jalan!']);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        if ($attendance->check_out_time) {
-            return response()->json(['error' => 'Anda sudah absen pulang hari ini!'], 400);
-        }
-
-        $image = $request->photo;
-        $image = str_replace(['data:image/jpeg;base64,', 'data:image/png;base64,', ' '], ['', '', '+'], $image);
-        
-        $safeId = Str::slug($internship->internship_id);
-        $imageName = 'out_' . $safeId . '_' . time() . '.jpg';
-        
-        Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
-
-        $attendance->update([
-            'check_out_time' => Carbon::now()->toTimeString(),
-            'check_out_photo' => 'uploads/attendance/' . $imageName,
-        ]);
-
-        return response()->json(['success' => 'Berhasil absen pulang, hati-hati di jalan!']);
     }
 
     // 5. --- Halaman dan Proses Izin ---
