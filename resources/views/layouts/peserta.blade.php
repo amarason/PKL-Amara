@@ -71,6 +71,34 @@
         </header>
 
         <main class="flex-grow p-4 sm:p-6 md:p-12">
+            {{-- Alert Messages --}}
+            @if ($message = Session::get('success'))
+                <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl flex items-start space-x-4">
+                    <i class="bi bi-check-circle-fill text-green-600 text-2xl mt-1"></i>
+                    <div>
+                        <p class="text-green-800 font-bold">{{ $message }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if ($message = Session::get('error'))
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center space-x-4">
+                    <i class="bi bi-exclamation-circle-fill text-red-600 text-2xl mt-1"></i>
+                    <div>
+                        <p class="text-red-800 font-bold">{{ $message }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if ($message = Session::get('warning'))
+                <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start space-x-4">
+                    <i class="bi bi-exclamation-triangle-fill text-amber-600 text-2xl mt-1"></i>
+                    <div>
+                        <p class="text-amber-800 font-bold">{{ $message }}</p>
+                    </div>
+                </div>
+            @endif
+
             @yield('content')
         </main>
     </div>

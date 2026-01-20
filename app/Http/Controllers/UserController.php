@@ -71,14 +71,22 @@ class UserController extends Controller
     // --- 2. Absensi kamera ---
     public function indexAbsensi()
     {
+        $internship = Internship::where('user_id', Auth::id())->first();
         $today = \Carbon\Carbon::today();
+        
+        // Cek apakah periode PKL masih berlaku
+        $endDate = Carbon::parse($internship->end_date)->endOfDay();
+        if ($today->gt($endDate)) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Periode PKL Anda telah berakhir. Sistem presensi ditutup.');
+        }
+        
         $isHoliday = \App\Models\Holiday::whereDate('holiday_date', $today)->exists();
 
         if ($today->isWeekend() || $isHoliday) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'Hari ini adalah hari libur atau akhir pekan. Sistem presensi dinonaktifkan.');
         }
-        $internship = Internship::where('user_id', Auth::id())->first();
         $attendance = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', Carbon::today())
             ->first();
@@ -91,15 +99,22 @@ class UserController extends Controller
     {
         try {
             $now = Carbon::now();
+            $today = Carbon::today();
             $jam = $now->format('H:i');
+            
+            // Cek apakah periode PKL masih berlaku
+            $internship = Internship::where('user_id', Auth::id())->first();
+            $endDate = Carbon::parse($internship->end_date)->endOfDay();
+            if ($today->gt($endDate)) {
+                return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
+            }
 
             // Validasi Waktu: 06:00 - 10:00
             if ($jam < '06:00' || $jam > '10:00') {
                 return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 06:00 - 10:00 WIB.'], 403);
             }
 
-            $request->validate(['photo' => 'required']); 
-            $internship = Internship::where('user_id', Auth::id())->first();
+            $request->validate(['photo' => 'required']);
 
             // Cek apakah sudah absen hari ini
             $existing = Attendance::where('internship_id', $internship->internship_id)
@@ -138,7 +153,15 @@ class UserController extends Controller
     {
         try {
             $now = Carbon::now();
+            $today = Carbon::today();
             $jam = $now->format('H:i');
+            
+            // Cek apakah periode PKL masih berlaku
+            $internship = Internship::where('user_id', Auth::id())->first();
+            $endDate = Carbon::parse($internship->end_date)->endOfDay();
+            if ($today->gt($endDate)) {
+                return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
+            }
 
             // Validasi Waktu: 16:00 - 23:59
             if ($jam < '16:00') {
@@ -146,7 +169,6 @@ class UserController extends Controller
             }
 
             $request->validate(['photo' => 'required']);
-            $internship = Internship::where('user_id', Auth::id())->first();
             
             $attendance = Attendance::where('internship_id', $internship->internship_id)
                 ->whereDate('attendance_date', Carbon::today())
@@ -193,6 +215,14 @@ class UserController extends Controller
 
     public function storeIzin(Request $request)
     {
+        // Cek apakah periode PKL masih berlaku
+        $internship = Internship::where('user_id', Auth::id())->first();
+        $today = Carbon::today();
+        $endDate = Carbon::parse($internship->end_date)->endOfDay();
+        if ($today->gt($endDate)) {
+            return back()->with('error', 'Periode PKL Anda telah berakhir. Pengajuan izin tidak dapat dilakukan.');
+        }
+
         $request->validate([
             'leave_date' => 'required|date', 
             'reason' => 'required|string|max:255',
@@ -201,8 +231,6 @@ class UserController extends Controller
             'document.max' => 'Gagal! Ukuran file lampiran tidak boleh lebih dari 2MB.',
             'document.mimes' => 'Gagal! Format file harus PDF, JPG, atau PNG.',
         ]);
-
-        $internship = Internship::where('user_id', Auth::id())->first();
 
         $exists = LeaveRequest::where('internship_id', $internship->internship_id)
             ->whereDate('leave_date', $request->leave_date)
