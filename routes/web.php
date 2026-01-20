@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/absensi', [UserController::class, 'indexAbsensi'])->name('user.absensi.index');
         Route::post('/absensi/masuk', [UserController::class, 'storeMasuk'])->name('user.absensi.masuk');
         Route::post('/absensi/pulang', [UserController::class, 'storePulang'])->name('user.absensi.pulang');
+        
 
         // Fitur Pengajuan Izin
         Route::get('/izin', [UserController::class, 'indexIzin'])->name('user.izin.index');
