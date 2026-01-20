@@ -113,7 +113,7 @@ class UserController extends Controller
             $image = $request->photo;
             $image = str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image);
             $safeId = \Illuminate\Support\Str::slug($internship->internship_id);
-            $imageName = 'in_' . $safeId . '_' . time() . '.jpg';
+            $imageName = 'in_' . $safeId . '_' . Carbon::today()->format('dmy') . '.jpg';
 
             \Illuminate\Support\Facades\Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
 
@@ -163,7 +163,7 @@ class UserController extends Controller
             $image = $request->photo;
             $image = str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image);
             $safeId = \Illuminate\Support\Str::slug($internship->internship_id);
-            $imageName = 'out_' . $safeId . '_' . time() . '.jpg';
+            $imageName = 'out_' . $safeId . '_' . Carbon::today()->format('dmy') . '.jpg';
             
             \Illuminate\Support\Facades\Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
 
@@ -196,13 +196,14 @@ class UserController extends Controller
         $request->validate([
             'leave_date' => 'required|date', 
             'reason' => 'required|string|max:255',
-            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
         ], [
+            'document.max' => 'Gagal! Ukuran file lampiran tidak boleh lebih dari 2MB.',
+            'document.mimes' => 'Gagal! Format file harus PDF, JPG, atau PNG.',
         ]);
 
         $internship = Internship::where('user_id', Auth::id())->first();
 
-        // Cek apakah user sudah mengajukan izin di tanggal yang sama (mencegah duplikasi)
         $exists = LeaveRequest::where('internship_id', $internship->internship_id)
             ->whereDate('leave_date', $request->leave_date)
             ->exists();

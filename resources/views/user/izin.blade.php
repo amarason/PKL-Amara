@@ -29,7 +29,8 @@
 
                     <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lampiran (Opsional)</label>
-                        <input type="file" name="document" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition">
+                        <input type="file" name="document" id="document_input" 
+                            class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition">
                         <p class="text-[9px] text-slate-400 mt-1">*Format: PDF, JPG, PNG (Maks 2MB)</p>
                     </div>
 
@@ -115,13 +116,13 @@
     </div>
 </div>
 
-{{-- SweetAlert & Logic Script --}}
+
 <script>
     /**
-     * Fungsi Konfirmasi Pembatalan
+     * 1. Fungsi Konfirmasi Pembatalan
      */
     function confirmCancel(event, form) {
-        event.preventDefault(); // Mencegah form submit langsung
+        event.preventDefault(); 
         
         Swal.fire({
             title: 'Batalkan Izin?',
@@ -133,9 +134,7 @@
             confirmButtonText: 'Ya, Batalkan!',
             cancelButtonText: 'Tutup',
             customClass: {
-                popup: 'rounded-[2rem]',
-                confirmButton: 'rounded-xl px-6 py-3 font-black uppercase tracking-widest text-xs',
-                cancelButton: 'rounded-xl px-6 py-3 font-black uppercase tracking-widest text-xs'
+                popup: 'rounded-[2rem]'
             }
         }).then((result) => {
             if (result.isConfirmed) {
@@ -145,7 +144,42 @@
     }
 
     /**
-     * Flash Messages
+     * 2. Pengecekan Ukuran File
+     */
+    const docInput = document.getElementById('document_input');
+    if (docInput) {
+        docInput.addEventListener('change', function() {
+            const file = this.files[0];
+            const maxSize = 2 * 1024 * 1024; 
+
+            if (file && file.size > maxSize) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Terlalu Besar',
+                    text: 'Ukuran file ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB melebihi batas maksimal 2MB.',
+                    confirmButtonColor: '#3b82f6',
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
+                this.value = ''; // Mengosongkan input file kembali
+            }
+        });
+    }
+
+    /**
+     * 3. Penanganan Error Validasi Laravel ($errors)
+     */
+    @if($errors->any())
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Validasi',
+            text: "{{ $errors->first() }}",
+            confirmButtonColor: '#ef4444',
+            customClass: { popup: 'rounded-[2rem]' }
+        });
+    @endif
+
+    /**
+     * 4. Flash Message: Berhasil
      */
     @if(session('success'))
         Swal.fire({
@@ -158,11 +192,15 @@
         });
     @endif
 
+    /**
+     * 5. Flash Message: Gagal (Manual Error)
+     */
     @if(session('error'))
         Swal.fire({
             icon: 'error',
             title: 'Gagal!',
             text: "{{ session('error') }}",
+            confirmButtonColor: '#ef4444',
             customClass: { popup: 'rounded-[2rem]' }
         });
     @endif
