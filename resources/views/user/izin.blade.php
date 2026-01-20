@@ -14,13 +14,12 @@
                     <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Izin</label>
                         <input type="date" 
-                               name="leave_date" 
-                               id="leave_date"
-                               min="{{ date('Y-m-d') }}" 
-                               value="{{ date('Y-m-d') }}" 
-                               required 
-                               class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-700 transition">
-                        <p class="text-[9px] text-amber-600 font-bold ml-1 italic">*Hanya berlaku untuk hari ini atau mendatang.</p>
+                            name="leave_date" 
+                            id="leave_date"
+                            value="{{ date('Y-m-d') }}" 
+                            required 
+                            class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-700 transition">
+                        <p class="text-[9px] text-blue-600 font-bold ml-1 italic">*Berlaku untuk tanggal sebelumnya, hari ini, atau mendatang.</p>
                     </div>
 
                     <div class="space-y-2">
