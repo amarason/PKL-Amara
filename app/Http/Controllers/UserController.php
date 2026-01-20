@@ -207,21 +207,21 @@ class UserController extends Controller
     public function storeIzin(Request $request)
     {
         $request->validate([
-            'leave_date' => 'required|date|after_or_equal:today',
+            'leave_date' => 'required|date', 
             'reason' => 'required|string|max:255',
             'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ], [
-            'leave_date.after_or_equal' => 'Gagal! Anda tidak dapat mengajukan izin untuk tanggal yang sudah terlewat.'
         ]);
 
         $internship = Internship::where('user_id', Auth::id())->first();
 
+        // Cek apakah user sudah mengajukan izin di tanggal yang sama (mencegah duplikasi)
         $exists = LeaveRequest::where('internship_id', $internship->internship_id)
             ->whereDate('leave_date', $request->leave_date)
             ->exists();
 
         if ($exists) {
-            return back()->with('error', 'Anda sudah mengajukan izin untuk tanggal tersebut.');
+            return back()->with('error', 'Anda sudah mengajukan izin untuk tanggal ' . Carbon::parse($request->leave_date)->format('d M Y') . '.');
         }
 
         $documentPath = null;
