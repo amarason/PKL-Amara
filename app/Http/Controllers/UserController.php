@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Internship;
 use App\Models\LeaveRequest;
+use App\Services\AttendanceDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -74,16 +75,17 @@ class UserController extends Controller
         $internship = Internship::where('user_id', Auth::id())->first();
         $today = \Carbon\Carbon::today();
         
-        // Cek apakah periode PKL masih berlaku
+        // Cek apakah periode PKL masih berlaku (bypass jika DEMO_MODE=true)
         $endDate = Carbon::parse($internship->end_date)->endOfDay();
-        if ($today->gt($endDate)) {
+        if (!env('DEMO_MODE') && $today->gt($endDate)) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'Periode PKL Anda telah berakhir. Sistem presensi ditutup.');
         }
         
         $isHoliday = \App\Models\Holiday::whereDate('holiday_date', $today)->exists();
 
-        if ($today->isWeekend() || $isHoliday) {
+        // Cek weekend/hari libur (bypass jika DEMO_MODE=true)
+        if (!env('DEMO_MODE') && ($today->isWeekend() || $isHoliday)) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'Hari ini adalah hari libur atau akhir pekan. Sistem presensi dinonaktifkan.');
         }
@@ -109,8 +111,8 @@ class UserController extends Controller
                 return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
             }
 
-            // Validasi Waktu: 06:00 - 10:00
-            if ($jam < '06:00' || $jam > '10:00') {
+            // Validasi Waktu: 06:00 - 10:00 (bypass jika DEMO_MODE=true)
+            if (!env('DEMO_MODE') && ($jam < '06:00' || $jam > '10:00')) {
                 return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 06:00 - 10:00 WIB.'], 403);
             }
 
@@ -163,8 +165,8 @@ class UserController extends Controller
                 return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
             }
 
-            // Validasi Waktu: 16:00 - 23:59
-            if ($jam < '16:00') {
+            // Validasi Waktu: 16:00 - 23:59 (bypass jika DEMO_MODE=true)
+            if (!env('DEMO_MODE') && $jam < '16:00') {
                 return response()->json(['error' => 'Belum waktunya pulang! Absen pulang dimulai pukul 16:00 WIB.'], 403);
             }
 
@@ -357,6 +359,23 @@ class UserController extends Controller
             'logoData' 
         ))->setPaper('a4', 'portrait');
 
-        return $pdf->download("Rekap_Absensi_{$internship->user->name}.pdf");
+        $fileName = "Rekap_Absensi_{$internship->user->name}.pdf";
+
+        // --- SIMPAN PDF KE STORAGE ---
+        $pdfContent = $pdf->output();
+        $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
+        Storage::disk('local')->put($filePath, $pdfContent);
+
+        // --- SIMPAN METADATA KE DATABASE ---
+        $documentService = new AttendanceDocumentService();
+        $documentService->saveDocument(
+            internshipId: $internship->internship_id,
+            filePath: $filePath,
+            qrHash: $encryptedHash,
+            periodStart: $month ? Carbon::create($year, $month, 1)->startOfMonth() : $internship->start_date,
+            periodEnd: $month ? Carbon::create($year, $month, 1)->endOfMonth() : $internship->end_date,
+        );
+
+        return $pdf->download($fileName);
     }
 }
