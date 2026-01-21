@@ -46,7 +46,7 @@ Buka admin, export PDF, scan QR dari HP. Selesai! 🎉
 ```
 URL Sebelum: http://localhost:8000/verifikasi/...
 URL Sesudah: http://192.168.1.5:8000/verifikasi/...
-                    ↑ IP lokal Anda
+                    ↑ IP lokal 
 
 HP bisa akses karena IP 192.168.1.5 ada di network yang sama ✓
 ```

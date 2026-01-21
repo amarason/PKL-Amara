@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendance_document', function (Blueprint $table) {
-            // Change document_id column from char(30) to char(36) to fit UUID
             $table->string('document_id', 36)->change();
         });
     }

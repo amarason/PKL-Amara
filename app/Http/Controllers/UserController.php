@@ -361,12 +361,12 @@ class UserController extends Controller
 
         $fileName = "Rekap_Absensi_{$internship->user->name}.pdf";
 
-        // --- SIMPAN PDF KE STORAGE ---
+        // --- Simpan pdf ke storage ---
         $pdfContent = $pdf->output();
         $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
         Storage::disk('local')->put($filePath, $pdfContent);
 
-        // --- SIMPAN METADATA KE DATABASE ---
+        // --- Simpa metadata ke database ---
         $documentService = new AttendanceDocumentService();
         try {
             $documentService->saveDocument(

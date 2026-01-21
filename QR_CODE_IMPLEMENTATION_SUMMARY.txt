@@ -107,7 +107,7 @@
   
   ❌ SEBELUM: http://localhost:8000/verifikasi/hash
   ✓ SESUDAH: http://192.168.1.5:8000/verifikasi/hash
-                     ↑ IP Lokal Anda
+                     ↑ IP Lokal 
   
   HP bisa akses karena di WiFi yang sama! 🎉
 

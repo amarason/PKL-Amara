@@ -18,7 +18,7 @@ Command ini akan:
 3. Copy IPv4 Address (192.168.x.x atau 10.0.x.x)
 4. Buka .env, uncomment dan set:
    QR_LOCAL_IP=192.168.1.5
-   (ganti dengan IP Anda)
+   (ganti dengan IP lokal)
 ```
 
 ### ✅ Option 3: Script PHP
@@ -36,7 +36,7 @@ php find-ip.php
 | 2️⃣ | `php artisan serve` | Jalankan server Laravel |
 | 3️⃣ | Hubungkan HP ke WiFi yang sama | ⚠️ PENTING! |
 | 4️⃣ | Download PDF rekap | Di admin dashboard |
-| 5️⃣ | Scan QR code dari HP | URL auto-generated dengan IP Anda |
+| 5️⃣ | Scan QR code dari HP | URL auto-generated dengan IP lokal |
 
 ---
 
@@ -84,7 +84,7 @@ return [
 
 ```dotenv
 # QR Code Configuration
-QR_LOCAL_IP=192.168.1.5          # SET DENGAN IP KOMPUTER ANDA
+QR_LOCAL_IP=192.168.1.5          # SET DENGAN IP KOMPUTER LOKAL
 QR_PORT=8000                      # Port Laravel
 QR_REWRITE_LOCALHOST=true         # Enable auto-replacement
 ```
@@ -128,9 +128,6 @@ QR_REWRITE_LOCALHOST=true         # Enable auto-replacement
 ---
 
 ## 🎓 Contoh Praktis
-
-**Skenario:**
-Anda ingin scan QR code rekap dari HP di ruangan lain
 
 **Langkah:**
 ```

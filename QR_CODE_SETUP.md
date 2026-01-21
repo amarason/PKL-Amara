@@ -4,7 +4,7 @@ Fitur QR code di rekap dokumen sudah dikonfigurasi agar bisa di-scan dari HP mes
 
 ## 🔧 Cara Setup
 
-### 1. Cari IP Address Lokal Komputer Anda
+### 1. Cari IP Address Lokal Komputer 
 
 #### Di Windows (CMD/PowerShell):
 ```powershell
@@ -32,7 +32,7 @@ Cari baris **"inet"** dengan alamat `192.168.x.x` atau `10.0.x.x`
 
 Buka file `.env` di root project:
 ```dotenv
-# Masukkan IP address komputer Anda (ganti 192.168.1.5 dengan IP Anda)
+# Masukkan IP address komputer lokal (ganti 192.168.1.5 dengan IP lokal)
 QR_LOCAL_IP=192.168.1.5
 QR_PORT=8000
 QR_REWRITE_LOCALHOST=true

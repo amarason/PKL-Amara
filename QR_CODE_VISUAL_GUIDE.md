@@ -83,7 +83,7 @@
 │ Ubah menjadi:                                    │
 │                                                  │
 │ # QR Code Configuration                          │
-│ QR_LOCAL_IP=192.168.1.5     ← PASTE IP ANDA     │
+│ QR_LOCAL_IP=192.168.1.5     ← PASTE IP KOMPUTER LOKAL   │
 │ QR_PORT=8000                                     │
 │ QR_REWRITE_LOCALHOST=true                        │
 │                                                  │
