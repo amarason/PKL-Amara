@@ -29,6 +29,67 @@ class AdminController extends Controller
         $this->idService = $idService;
     }
 
+    /**
+     * Generate URL yang bisa diakses dari HP dalam network yang sama
+     * Jika APP_URL = localhost, gunakan IP address lokal
+     */
+    protected function generateAccessibleUrl($routeName, $parameters = [])
+    {
+        $url = route($routeName, $parameters);
+        
+        // Jika QR rewrite disabled, return URL apa adanya
+        if (!config('qrcode.rewrite_localhost')) {
+            return $url;
+        }
+        
+        // Jika masih localhost, ganti dengan IP address lokal
+        if (strpos($url, 'localhost') !== false || strpos($url, '127.0.0.1') !== false) {
+            $ipAddress = config('qrcode.local_ip') ?? $this->getLocalIP();
+            $port = config('qrcode.port', 8000);
+            $baseUrl = "http://{$ipAddress}:{$port}";
+            $url = str_replace(['http://localhost', 'http://127.0.0.1'], $baseUrl, $url);
+        }
+        
+        return $url;
+    }
+
+    /**
+     * Dapatkan IP address lokal (192.168.x.x)
+     */
+    protected function getLocalIP()
+    {
+        $host = request()->getHost();
+        
+        // Jika sudah bukan localhost, gunakan apa adanya
+        if ($host !== 'localhost' && $host !== '127.0.0.1') {
+            return $host;
+        }
+        
+        // Jika localhost, coba dapatkan IP dari server
+        if (!empty($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
+            return $_SERVER['SERVER_ADDR'];
+        }
+        
+        // Fallback: gunakan hostname
+        $hostname = gethostname();
+        $ip = gethostbyname($hostname);
+        
+        // Jika masih localhost/127.0.0.1, return warning
+        if ($ip === 'localhost' || $ip === '127.0.0.1' || $ip === $hostname) {
+            // Try to get from system
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                // Windows
+                $output = shell_exec('ipconfig /all 2>&1');
+                if (preg_match('/IPv4 Address[\s\.]+: ([0-9.]+)/', $output, $matches)) {
+                    return $matches[1];
+                }
+            }
+            return '127.0.0.1';
+        }
+        
+        return $ip;
+    }
+
     // --- 1. Dashboard ---
     public function index()
     {
@@ -173,6 +234,23 @@ class AdminController extends Controller
     {
         Internship::where('internship_id', $id)->update(['status' => $request->status]);
         return back()->with('success', 'Status peserta berhasil diperbarui.');
+    }
+
+    public function resetPassword($id)
+    {
+        try {
+            $peserta = Internship::where('internship_id', $id)->with('user')->firstOrFail();
+            $user = $peserta->user;
+            
+            // Reset password ke login_id (password default)
+            $user->update([
+                'password' => Hash::make($user->login_id)
+            ]);
+
+            return back()->with('success', "Password peserta {$user->name} berhasil direset ke password default (ID PKL).");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mereset password: ' . $e->getMessage());
+        }
     }
 
     // --- 3. Absensi dan Izin ---
@@ -344,7 +422,8 @@ class AdminController extends Controller
         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
         
         $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun . '|' . $search);
-        $verifyUrl = route('report.verify', ['hash' => $hash]);
+        // Gunakan IP address lokal jika di localhost untuk bisa di-scan dari HP
+        $verifyUrl = $this->generateAccessibleUrl('report.verify', ['hash' => $hash]);
         $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
 
         $pdf = Pdf::loadView('admin.pdf_rekap', compact(
