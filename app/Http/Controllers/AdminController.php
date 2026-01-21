@@ -459,28 +459,34 @@ class AdminController extends Controller
         $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
         Storage::disk('local')->put($filePath, $pdfContent);
 
-        // --- Simpan metadata ke database (untuk setiap peserta jika pencarian spesifik) ---
+        // --- Simpan metadata ke database ---
         $documentService = new AttendanceDocumentService();
-        if ($peserta->count() === 1) {
-            // Jika filter hanya 1 peserta, simpan untuk peserta itu
-            $documentService->saveDocument(
-                internshipId: $peserta->first()->internship_id,
-                filePath: $filePath,
-                qrHash: $hash,
-                periodStart: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->startOfMonth() : null,
-                periodEnd: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->endOfMonth() : null,
-            );
-        } else if ($institution_id && !$search) {
-            // Jika filter berdasarkan institusi, simpan untuk setiap peserta
-            foreach ($peserta as $p) {
+        
+        try {
+            if ($peserta->count() === 1) {
+                // Jika filter hanya 1 peserta, simpan untuk peserta itu
                 $documentService->saveDocument(
-                    internshipId: $p->internship_id,
+                    internshipId: $peserta->first()->internship_id,
                     filePath: $filePath,
                     qrHash: $hash,
                     periodStart: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->startOfMonth() : null,
                     periodEnd: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->endOfMonth() : null,
                 );
+            } else {
+                // Untuk multiple peserta, simpan untuk setiap peserta
+                foreach ($peserta as $p) {
+                    $documentService->saveDocument(
+                        internshipId: $p->internship_id,
+                        filePath: $filePath,
+                        qrHash: $hash,
+                        periodStart: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->startOfMonth() : null,
+                        periodEnd: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->endOfMonth() : null,
+                    );
+                }
             }
+        } catch (\Exception $e) {
+            // Log error tapi tetap download PDF
+            \Illuminate\Support\Facades\Log::warning('Attendance document save failed: ' . $e->getMessage());
         }
 
         return $pdf->download($fileName);

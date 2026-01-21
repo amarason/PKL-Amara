@@ -368,13 +368,18 @@ class UserController extends Controller
 
         // --- SIMPAN METADATA KE DATABASE ---
         $documentService = new AttendanceDocumentService();
-        $documentService->saveDocument(
-            internshipId: $internship->internship_id,
-            filePath: $filePath,
-            qrHash: $encryptedHash,
-            periodStart: $month ? Carbon::create($year, $month, 1)->startOfMonth() : $internship->start_date,
-            periodEnd: $month ? Carbon::create($year, $month, 1)->endOfMonth() : $internship->end_date,
-        );
+        try {
+            $documentService->saveDocument(
+                internshipId: $internship->internship_id,
+                filePath: $filePath,
+                qrHash: $encryptedHash,
+                periodStart: $month ? Carbon::create($year, $month, 1)->startOfMonth() : $internship->start_date,
+                periodEnd: $month ? Carbon::create($year, $month, 1)->endOfMonth() : $internship->end_date,
+            );
+        } catch (\Exception $e) {
+            // Log error tapi tetap download PDF
+            \Illuminate\Support\Facades\Log::warning('Attendance document save failed: ' . $e->getMessage());
+        }
 
         return $pdf->download($fileName);
     }

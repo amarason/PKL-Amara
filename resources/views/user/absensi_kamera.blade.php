@@ -1,5 +1,4 @@
 @php
-    // Inisialisasi waktu sekarang dengan zona waktu Jakarta
     $now = \Carbon\Carbon::now('Asia/Jakarta');
     $jamMenit = $now->format('H:i');
 
