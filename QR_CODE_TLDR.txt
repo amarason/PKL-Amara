@@ -1,0 +1,77 @@
+🎯 SOLUSI QR CODE LOCALHOST - TL;DR
+═════════════════════════════════════════════════════════════════════
+
+## Masalah
+QR code di PDF rekap error ketika di-scan dari HP karena URL masih localhost
+
+## Solusi
+1 command & done! 👇
+
+## Setup (5 Menit)
+
+### CARA 1: Auto Setup ⭐ (RECOMMENDED)
+```bash
+php artisan qr:setup-ip
+```
+Selesai! Command ini auto-detect IP dan update .env.
+
+### CARA 2: Manual Setup
+```bash
+# 1. Buka CMD/PowerShell
+ipconfig
+
+# 2. Catat IPv4 Address (192.168.x.x)
+
+# 3. Edit .env, uncomment dan set:
+QR_LOCAL_IP=192.168.1.5
+```
+
+### CARA 3: Script PHP
+```bash
+php find-ip.php
+```
+
+## Test
+
+```bash
+php artisan serve
+```
+
+Buka admin, export PDF, scan QR dari HP. Selesai! 🎉
+
+---
+
+## Kenapa ini berfungsi?
+
+```
+URL Sebelum: http://localhost:8000/verifikasi/...
+URL Sesudah: http://192.168.1.5:8000/verifikasi/...
+                    ↑ IP lokal Anda
+
+HP bisa akses karena IP 192.168.1.5 ada di network yang sama ✓
+```
+
+---
+
+## Troubleshoot
+
+| Problem | Solution |
+|---------|----------|
+| HP tidak bisa akses | Pastikan HP di WiFi SAMA dengan komputer |
+| IP tidak ketemu | Manual set di .env: `QR_LOCAL_IP=192.168.1.5` |
+| Firewall error | Windows Firewall → Allow port 8000 |
+| QR masih localhost | Clear browser cache atau restart server |
+
+---
+
+## Files
+
+- **For Setup**: QR_CODE_QUICK_START.md
+- **For Visual**: QR_CODE_VISUAL_GUIDE.md
+- **For Details**: QR_CODE_SETUP.md
+- **For Code**: QR_CODE_DEVELOPER.md
+- **For Index**: QR_CODE_DOCS_INDEX.md
+
+---
+
+**One Command. Problem Solved.** ✨

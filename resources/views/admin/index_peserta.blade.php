@@ -57,6 +57,11 @@
                                     <input type="hidden" name="status" value="selesai">
                                     <button type="button" onclick="confirmSelesai('{{ $row->internship_id }}', '{{ $row->user->name }}')" class="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-green-600 hover:text-white transition">Selesai</button>
                                 </form>
+
+                                <form id="form-reset-{{ $row->internship_id }}" action="{{ route('admin.peserta.resetPassword', $row->internship_id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="button" onclick="confirmResetPassword('{{ $row->internship_id }}', '{{ $row->user->name }}')" class="bg-orange-50 text-orange-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-orange-600 hover:text-white transition" title="Reset Password ke Password Default">Reset Password</button>
+                                </form>
                                 @endif
 
                                 <button type="button" onclick="openEditModal('{{ $row->internship_id }}')" class="text-slate-300 hover:text-blue-500 transition">
@@ -136,6 +141,21 @@
             customClass: { popup: 'rounded-[2rem]' }
         }).then((result) => {
             if (result.isConfirmed) { document.getElementById('form-selesai-' + id).submit(); }
+        })
+    }
+
+    function confirmResetPassword(id, nama) {
+        Swal.fire({
+            title: 'Reset Password Peserta',
+            text: `Apakah Anda yakin ingin mereset password ${nama} ke password default (ID PKL)?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EA580C',
+            confirmButtonText: 'Ya, Reset Password!',
+            cancelButtonText: 'Batal',
+            customClass: { popup: 'rounded-[2rem]' }
+        }).then((result) => {
+            if (result.isConfirmed) { document.getElementById('form-reset-' + id).submit(); }
         })
     }
 
