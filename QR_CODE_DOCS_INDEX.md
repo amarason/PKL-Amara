@@ -214,4 +214,3 @@ Advanced
 
 ---
 
-**Enjoy your QR code feature! 🎉**
