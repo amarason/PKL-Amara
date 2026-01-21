@@ -46,8 +46,21 @@ class AdminController extends Controller
         if (strpos($url, 'localhost') !== false || strpos($url, '127.0.0.1') !== false) {
             $ipAddress = config('qrcode.local_ip') ?? $this->getLocalIP();
             $port = config('qrcode.port', 8000);
-            $baseUrl = "http://{$ipAddress}:{$port}";
-            $url = str_replace(['http://localhost', 'http://127.0.0.1'], $baseUrl, $url);
+            
+            // Parse URL dan replace host
+            $parsed = parse_url($url);
+            $newUrl = $parsed['scheme'] . '://' . $ipAddress . ':' . $port;
+            if (!empty($parsed['path'])) {
+                $newUrl .= $parsed['path'];
+            }
+            if (!empty($parsed['query'])) {
+                $newUrl .= '?' . $parsed['query'];
+            }
+            if (!empty($parsed['fragment'])) {
+                $newUrl .= '#' . $parsed['fragment'];
+            }
+            
+            return $newUrl;
         }
         
         return $url;
@@ -447,22 +460,39 @@ class AdminController extends Controller
     public function verifyReport($hash)
     {
         try {
-            $decrypted = Crypt::decryptString($hash);
-            [$id, $bulan, $tahun] = explode('|', $decrypted);
+            // Cache hasil verifikasi selama 1 jam untuk menghindari re-encryption setiap kali
+            $cacheKey = 'verify_report_' . substr($hash, 0, 20);
+            
+            $reportData = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addHours(1), function() use ($hash) {
+                $decrypted = Crypt::decryptString($hash);
+                [$id, $bulan, $tahun] = explode('|', $decrypted);
 
-            $peserta = Internship::with(['user', 'institution'])->where('internship_id', $id)->first();
+                $peserta = Internship::select(['internship_id', 'user_id', 'institution_id', 'start_date', 'end_date'])
+                    ->with(['user:id,name', 'institution:institution_id,institution_name'])
+                    ->where('internship_id', $id)
+                    ->first();
 
-            if (!$peserta) return "Dokumen Tidak Dikenali oleh Sistem SIPRAKER.";
+                if (!$peserta) {
+                    return ['error' => true, 'message' => 'Dokumen Tidak Dikenali oleh Sistem SIPRAKER.'];
+                }
 
-            return view('public.verify_report', [
-                'nama' => $peserta->user->name,
-                'instansi' => $peserta->institution->institution_name,
-                'periode_mulai' => $peserta->start_date,
-                'periode_selesai' => $peserta->end_date,
-                'laporan_bulan' => Carbon::create()->month($bulan)->format('F'),
-                'laporan_tahun' => $tahun,
-                'verified_at' => now()
-            ]);
+                return [
+                    'error' => false,
+                    'nama' => $peserta->user->name,
+                    'instansi' => $peserta->institution->institution_name,
+                    'periode_mulai' => $peserta->start_date,
+                    'periode_selesai' => $peserta->end_date,
+                    'laporan_bulan' => Carbon::create()->month($bulan)->format('F'),
+                    'laporan_tahun' => $tahun,
+                    'verified_at' => now()
+                ];
+            });
+
+            if ($reportData['error'] ?? false) {
+                return $reportData['message'];
+            }
+
+            return view('public.verify_report', $reportData);
         } catch (\Exception $e) {
             return "Link Verifikasi Kadaluarsa atau Tidak Valid.";
         }

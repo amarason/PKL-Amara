@@ -109,8 +109,8 @@ class UserController extends Controller
                 return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
             }
 
-            // Validasi Waktu: 06:00 - 10:00
-            if ($jam < '06:00' || $jam > '10:00') {
+            // Validasi Waktu: 06:00 - 10:00 (bypass jika DEMO_MODE=true)
+            if (!env('DEMO_MODE') && ($jam < '06:00' || $jam > '10:00')) {
                 return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 06:00 - 10:00 WIB.'], 403);
             }
 
@@ -163,8 +163,8 @@ class UserController extends Controller
                 return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
             }
 
-            // Validasi Waktu: 16:00 - 23:59
-            if ($jam < '16:00') {
+            // Validasi Waktu: 16:00 - 23:59 (bypass jika DEMO_MODE=true)
+            if (!env('DEMO_MODE') && $jam < '16:00') {
                 return response()->json(['error' => 'Belum waktunya pulang! Absen pulang dimulai pukul 16:00 WIB.'], 403);
             }
 
