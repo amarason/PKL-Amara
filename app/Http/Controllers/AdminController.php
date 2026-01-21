@@ -8,12 +8,14 @@ use App\Models\Attendance;
 use App\Models\Institution;
 use App\Models\Major;
 use App\Models\LeaveRequest;
-use App\Services\IdGeneratorService; 
+use App\Services\IdGeneratorService;
+use App\Services\AttendanceDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt; 
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -451,6 +453,35 @@ class AdminController extends Controller
         }
 
         $fileName = "Rekap_Absensi_{$namaSubjek}_{$namaBulan}_{$tahun}.pdf";
+
+        // --- Simpan PDF ke storage ---
+        $pdfContent = $pdf->output();
+        $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
+        Storage::disk('local')->put($filePath, $pdfContent);
+
+        // --- Simpan metadata ke database (untuk setiap peserta jika pencarian spesifik) ---
+        $documentService = new AttendanceDocumentService();
+        if ($peserta->count() === 1) {
+            // Jika filter hanya 1 peserta, simpan untuk peserta itu
+            $documentService->saveDocument(
+                internshipId: $peserta->first()->internship_id,
+                filePath: $filePath,
+                qrHash: $hash,
+                periodStart: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->startOfMonth() : null,
+                periodEnd: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->endOfMonth() : null,
+            );
+        } else if ($institution_id && !$search) {
+            // Jika filter berdasarkan institusi, simpan untuk setiap peserta
+            foreach ($peserta as $p) {
+                $documentService->saveDocument(
+                    internshipId: $p->internship_id,
+                    filePath: $filePath,
+                    qrHash: $hash,
+                    periodStart: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->startOfMonth() : null,
+                    periodEnd: $bulan !== 'all' ? Carbon::create($tahun, $bulan, 1)->endOfMonth() : null,
+                );
+            }
+        }
 
         return $pdf->download($fileName);
         }

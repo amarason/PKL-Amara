@@ -3,9 +3,10 @@
     $now = \Carbon\Carbon::now('Asia/Jakarta');
     $jamMenit = $now->format('H:i');
 
-    // Pengaturan Jam Operasional
-    $canCheckIn = ($jamMenit >= '06:00' && $jamMenit <= '10:00');
-    $canCheckOut = ($jamMenit >= '16:00' && $jamMenit <= '23:59');
+    // Pengaturan Jam Operasional (bypass jika DEMO_MODE=true)
+    $demoMode = env('DEMO_MODE', false);
+    $canCheckIn = $demoMode || ($jamMenit >= '06:00' && $jamMenit <= '10:00');
+    $canCheckOut = $demoMode || ($jamMenit >= '16:00' && $jamMenit <= '23:59');
 
     // Logika penentu apakah kamera harus muncul
     $showCamera = false;
