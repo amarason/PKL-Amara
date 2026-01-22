@@ -87,14 +87,20 @@
                 <tbody class="divide-y divide-slate-50">
                     @forelse($peserta as $p)
                         @php
-                            $hadir = $p->attendance->where('status', 'hadir')->count();
-                            $izin = $p->attendance->where('status', 'izin')->count();
-                            
+                            $allAtt = $p->attendance;
+                            // Hitung yang absennya lengkap (Check In bukan 00:00:00)
+                            $h_lengkap = $allAtt->where('status', 'hadir')->where('check_in_time', '!=', '00:00:00')->count();
+                            // Hitung yang lupa absen masuk (Check In adalah 00:00:00)
+                            $h_lupa = $allAtt->where('status', 'hadir')->where('check_in_time', '==', '00:00:00')->count();
+                            $izin = $allAtt->where('status', 'izin')->count();
+
                             $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
                             
-                            $alpha = max(0, $totalSeharusnya - ($hadir + $izin));
-                
-                            $persentase = $totalSeharusnya > 0 ? min(100, round(($hadir / $totalSeharusnya) * 100)) : 0;
+                            // Poin Hadir = (Lengkap * 1) + (Lupa Masuk * 0.5)
+                            $poinKehadiran = $h_lengkap + ($h_lupa * 0.5);
+                        
+                            $alpha = max(0, $totalSeharusnya - ($h_lengkap + $h_lupa + $izin));
+                            $persentase = $totalSeharusnya > 0 ? min(100, round(($poinKehadiran / $totalSeharusnya) * 100)) : 0;
                         @endphp
 
                         <tr class="hover:bg-slate-50/50 transition-all">
@@ -107,7 +113,12 @@
                                     {{ $p->institution->institution_name }}
                                 </span>
                             </td>
-                            <td class="px-6 py-5 text-center font-black text-green-500 text-sm">{{ $hadir }}</td>
+                            <td class="px-6 py-5 text-center font-black text-green-500 text-sm">
+                                {{ $h_lengkap + $h_lupa }}
+                                @if($h_lupa > 0)
+                                    <span class="block text-[8px] text-amber-500 font-bold">({{ $h_lupa }} Lupa Masuk)</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-5 text-center font-black text-blue-500 text-sm">{{ $izin }}</td>
                             <td class="px-6 py-5 text-center font-black text-red-500 text-sm">{{ $alpha }}</td>
                             <td class="px-6 py-5 text-center">
@@ -116,15 +127,17 @@
                                         {{ $persentase }}%
                                     </span>
                                     <div class="w-20 bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-                                    <div class="{{ $persentase >= 80 ? 'bg-green-500' : 'bg-amber-500' }} h-full" 
-                                            style="width: {{ $persentase }}%">
-                                    </div>
+                                        <div class="{{ $persentase >= 80 ? 'bg-green-500' : 'bg-amber-500' }} h-full" 
+                                             style="width: {{ $persentase }}%">
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-6 py-20 text-center text-slate-300 italic font-bold">Data tidak ditemukan.</td></tr>
+                        <tr>
+                            <td colspan="6" class="px-6 py-20 text-center text-slate-300 italic font-bold">Data tidak ditemukan.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>

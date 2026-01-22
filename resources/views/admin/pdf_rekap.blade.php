@@ -54,20 +54,30 @@
             <tbody>
                 @foreach($peserta as $index => $p)
                     @php
-                        $h = $p->attendance->where('status', 'hadir')->count();
+                        // Hitung kehadiran lengkap (bukan 00:00:00)
+                        $h_full = $p->attendance->where('status', 'hadir')->where('check_in_time', '!=', '00:00:00')->count();
+                        // Hitung lupa absen masuk (00:00:00)
+                        $h_half = $p->attendance->where('status', 'hadir')->where('check_in_time', '==', '00:00:00')->count();
                         $i = $p->attendance->where('status', 'izin')->count();
 
-                        $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
+                        $totalShrs = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
                         
-                        $a = max(0, $totalSeharusnya - ($h + $i));
-
-                        $persen = $totalSeharusnya > 0 ? min(100, round(($h / $totalSeharusnya) * 100)) : 0;
+                        // Rumus Bobot: Lengkap * 1 + Lupa * 0.5
+                        $weightedPoin = $h_full + ($h_half * 0.5);
+                        
+                        $a = max(0, $totalShrs - ($h_full + $h_half + $i));
+                        $persen = $totalShrs > 0 ? min(100, round(($weightedPoin / $totalShrs) * 100)) : 0;
                     @endphp
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td style="text-align: left; padding-left: 8px;">{{ $p->user->name }}</td>
                         <td>{{ $p->user->login_id }}</td>
-                        <td class="text-hadir">{{ $h }}</td>
+                        <td class="text-hadir">
+                            {{ $h_full + $h_half }}
+                            @if($h_half > 0) 
+                                <br><small style="color:#d97706; font-size:7pt;">*{{ $h_half }} Lupa Masuk (Poin 0.5)</small> 
+                            @endif
+                        </td>
                         <td class="text-izin">{{ $i }}</td>
                         <td class="text-alpha">{{ $a }}</td>
                         <td style="font-weight: bold;">{{ $persen }}%</td>

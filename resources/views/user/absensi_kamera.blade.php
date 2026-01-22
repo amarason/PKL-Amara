@@ -2,18 +2,12 @@
     $now = \Carbon\Carbon::now('Asia/Jakarta');
     $jamMenit = $now->format('H:i');
 
-    // Pengaturan Jam Operasional (bypass jika DEMO_MODE=true)
-    $demoMode = env('DEMO_MODE', false);
-    $canCheckIn = $demoMode || ($jamMenit >= '06:00' && $jamMenit <= '10:00');
-    $canCheckOut = $demoMode || ($jamMenit >= '16:00' && $jamMenit <= '23:59');
+    // Jam Operasional
+    $canCheckIn = ($jamMenit >= '00:00' && $jamMenit <= '12:00');
+    $canCheckOut = ($jamMenit >= '12:01' && $jamMenit <= '19:00');
 
-    // Logika penentu apakah kamera harus muncul
-    $showCamera = false;
-    if (!$attendance && $canCheckIn) {
-        $showCamera = true;
-    } elseif ($attendance && !$attendance->check_out_time && $canCheckOut) {
-        $showCamera = true;
-    }
+    // Kamera tetap muncul selama masih dalam jam operasional apa pun
+    $showCamera = ($canCheckIn || $canCheckOut);
 @endphp
 
 @extends('layouts.peserta')
@@ -24,10 +18,10 @@
         <h2 class="text-3xl font-black text-slate-800 tracking-tight">Presensi Harian</h2>
         <div class="mt-3 flex justify-center gap-2">
             <span class="px-4 py-1.5 {{ $canCheckIn ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase tracking-wider border {{ $canCheckIn ? 'border-blue-200' : 'border-slate-200' }}">
-                Masuk: 06:00 - 10:00
+                Masuk: 00:00 - 12:00
             </span>
             <span class="px-4 py-1.5 {{ $canCheckOut ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase tracking-wider border {{ $canCheckOut ? 'border-emerald-200' : 'border-slate-200' }}">
-                Pulang: 16:00 - 23:59
+                Pulang: 12:01 - 19:00
             </span>
         </div>
     </div>
@@ -48,22 +42,24 @@
         @else
             {{-- Seleksi tipe absensi --}}
             <div class="flex gap-4 mb-10 w-full max-w-md">
+                {{-- Opsi Masuk --}}
                 <label class="flex-1 cursor-pointer group">
                     <input type="radio" name="absensi_type" value="masuk" id="type_masuk" class="hidden peer" 
                         {{ (!$attendance && $canCheckIn) ? 'checked' : '' }} 
                         {{ ($attendance || !$canCheckIn) ? 'disabled' : '' }}>
-                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50 group-hover:border-blue-200">
-                        <i class="bi bi-box-arrow-in-right text-3xl mb-2 block {{ (!$attendance && $canCheckIn) ? 'text-blue-500' : 'text-slate-400' }}"></i>
+                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50">
+                        <i class="bi bi-box-arrow-in-right text-3xl mb-2 block"></i>
                         <span class="text-[11px] font-black uppercase tracking-widest block">Masuk</span>
                     </div>
                 </label>
 
+                {{-- Opsi Pulang --}}
                 <label class="flex-1 cursor-pointer group">
                     <input type="radio" name="absensi_type" value="pulang" id="type_pulang" class="hidden peer" 
-                        {{ ($attendance && !$attendance->check_out_time && $canCheckOut) ? 'checked' : '' }}
-                        {{ (!$canCheckOut || ($attendance && $attendance->check_out_time) || (!$attendance)) ? 'disabled' : '' }}>
-                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50 group-hover:border-emerald-200">
-                        <i class="bi bi-box-arrow-right text-3xl mb-2 block {{ ($attendance && !$attendance->check_out_time && $canCheckOut) ? 'text-emerald-500' : 'text-slate-400' }}"></i>
+                        {{ ($canCheckOut && (!$attendance || !$attendance->check_out_time)) ? 'checked' : '' }}
+                        {{ (!$canCheckOut || ($attendance && $attendance->check_out_time)) ? 'disabled' : '' }}>
+                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50">
+                        <i class="bi bi-box-arrow-right text-3xl mb-2 block"></i>
                         <span class="text-[11px] font-black uppercase tracking-widest block">Pulang</span>
                     </div>
                 </label>
@@ -205,7 +201,7 @@
                     icon: 'success',
                     title: 'Berhasil!',
                     text: data.success,
-                    confirmButtonText: 'Mantap',
+                    confirmButtonText: 'Berhasil Absen',
                     confirmButtonColor: '#3b82f6'
                 }).then(() => {
                     window.location.reload();

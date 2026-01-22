@@ -55,40 +55,48 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $internship = Internship::with('user')->where('user_id', $user->id)->first();
-        if (!$internship) return "Data tidak ditemukan.";
-
-        $totalHadir = Attendance::where('internship_id', $internship->internship_id)->where('status', 'hadir')->count();
-        $totalIzin = Attendance::where('internship_id', $internship->internship_id)->where('status', 'izin')->count();
+        
+        $allAtt = Attendance::where('internship_id', $internship->internship_id)->get();
+        
+        // Hitung Poin Berbobot untuk Efektivitas
+        $h_lengkap = $allAtt->where('status', 'hadir')->where('check_in_time', '!=', '00:00:00')->count();
+        $h_lupa = $allAtt->where('status', 'hadir')->where('check_in_time', '==', '00:00:00')->count();
+        $totalIzin = $allAtt->where('status', 'izin')->count();
+        
+        $totalHadir = $h_lengkap + $h_lupa;
 
         $seharusnyaHadir = $internship->getTotalSeharusnyaHadir();
         $totalAlpha = max(0, $seharusnyaHadir - ($totalHadir + $totalIzin));
 
-        $absensiHariIni = Attendance::where('internship_id', $internship->internship_id)
-            ->whereDate('attendance_date', Carbon::today())->first();
+        $efektivitas = $seharusnyaHadir > 0 ? min(100, round((($h_lengkap + ($h_lupa * 0.5)) / $seharusnyaHadir) * 100)) : 0;
 
-        return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'totalAlpha', 'absensiHariIni'));
+        $absensiHariIni = Attendance::where('internship_id', $internship->internship_id)
+            ->whereDate('attendance_date', \Carbon\Carbon::today())->first();
+
+        return view('user.dashboard', compact('internship', 'totalHadir', 'totalIzin', 'totalAlpha', 'absensiHariIni', 'efektivitas'));
     }
 
     // --- 2. Absensi kamera ---
     public function indexAbsensi()
     {
         $internship = Internship::where('user_id', Auth::id())->first();
-        $today = \Carbon\Carbon::today();
+        $today = \Carbon\Carbon::today('Asia/Jakarta');
         
-        // Cek apakah periode PKL masih berlaku (bypass jika DEMO_MODE=true)
+        // Validasi Akhir Periode PKL (Wajib)
         $endDate = Carbon::parse($internship->end_date)->endOfDay();
-        if (!env('DEMO_MODE') && $today->gt($endDate)) {
+        if ($today->gt($endDate)) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'Periode PKL Anda telah berakhir. Sistem presensi ditutup.');
         }
         
         $isHoliday = \App\Models\Holiday::whereDate('holiday_date', $today)->exists();
 
-        // Cek weekend/hari libur (bypass jika DEMO_MODE=true)
-        if (!env('DEMO_MODE') && ($today->isWeekend() || $isHoliday)) {
+        // Validasi Akhir Pekan & Hari Libur (Wajib)
+        if ($today->isWeekend() || $isHoliday) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'Hari ini adalah hari libur atau akhir pekan. Sistem presensi dinonaktifkan.');
         }
+
         $attendance = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', Carbon::today())
             ->first();
@@ -96,29 +104,21 @@ class UserController extends Controller
         return view('user.absensi_kamera', compact('attendance'));
     }
 
-    // --- 3. Simpan Absen Masuk  ---
+    // --- 3. Simpan Absen Masuk ---
     public function storeMasuk(Request $request)
     {
         try {
-            $now = Carbon::now();
-            $today = Carbon::today();
+            $now = Carbon::now('Asia/Jakarta');
             $jam = $now->format('H:i');
             
-            // Cek apakah periode PKL masih berlaku
-            $internship = Internship::where('user_id', Auth::id())->first();
-            $endDate = Carbon::parse($internship->end_date)->endOfDay();
-            if ($today->gt($endDate)) {
-                return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
-            }
-
-            // Validasi Waktu: 06:00 - 10:00 (bypass jika DEMO_MODE=true)
-            if (!env('DEMO_MODE') && ($jam < '06:00' || $jam > '10:00')) {
-                return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 06:00 - 10:00 WIB.'], 403);
+            // Validasi Waktu: 00:00 - 12:00 
+            if ($jam < '00:00' || $jam > '12:00') {
+                return response()->json(['error' => 'Gagal! Absen masuk hanya tersedia pukul 00:00 - 12:00 WIB.'], 403);
             }
 
             $request->validate(['photo' => 'required']);
+            $internship = Internship::where('user_id', Auth::id())->first();
 
-            // Cek apakah sudah absen hari ini
             $existing = Attendance::where('internship_id', $internship->internship_id)
                 ->whereDate('attendance_date', Carbon::today())
                 ->first();
@@ -144,142 +144,57 @@ class UserController extends Controller
             ]);
 
             return response()->json(['success' => 'Berhasil absen masuk tepat waktu!']);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    // --- 4. Simpan Absen Pulang  ---
+    // --- 4. Simpan Absen Pulang ---
     public function storePulang(Request $request)
     {
         try {
-            $now = Carbon::now();
-            $today = Carbon::today();
+            $now = Carbon::now('Asia/Jakarta');
             $jam = $now->format('H:i');
             
-            // Cek apakah periode PKL masih berlaku
-            $internship = Internship::where('user_id', Auth::id())->first();
-            $endDate = Carbon::parse($internship->end_date)->endOfDay();
-            if ($today->gt($endDate)) {
-                return response()->json(['error' => 'Periode PKL Anda telah berakhir. Absensi tidak dapat dilakukan.'], 403);
-            }
-
-            // Validasi Waktu: 16:00 - 23:59 (bypass jika DEMO_MODE=true)
-            if (!env('DEMO_MODE') && $jam < '16:00') {
-                return response()->json(['error' => 'Belum waktunya pulang! Absen pulang dimulai pukul 16:00 WIB.'], 403);
+            // Validasi Waktu: 12:01 - 19:00
+            if ($jam < '12:01' || $jam > '19:00') {
+                return response()->json(['error' => 'Gagal! Absen pulang hanya tersedia pukul 12:01 - 19:00 WIB.'], 403);
             }
 
             $request->validate(['photo' => 'required']);
+            $internship = Internship::where('user_id', Auth::id())->first();
             
             $attendance = Attendance::where('internship_id', $internship->internship_id)
                 ->whereDate('attendance_date', Carbon::today())
                 ->first();
 
-            if (!$attendance) {
-                return response()->json(['error' => 'Gagal! Anda harus absen masuk terlebih dahulu.'], 400);
-            }
-
-            if ($attendance->check_out_time) {
+            if ($attendance && $attendance->check_out_time) {
                 return response()->json(['error' => 'Anda sudah absen pulang hari ini.'], 400);
             }
 
             $image = $request->photo;
             $image = str_replace(['data:image/jpeg;base64,', ' '], ['', '+'], $image);
-            $safeId = \Illuminate\Support\Str::slug($internship->internship_id);
-            $imageName = 'out_' . $safeId . '_' . Carbon::today()->format('dmy') . '.jpg';
+            $imageName = 'out_' . \Illuminate\Support\Str::slug($internship->internship_id) . '_' . date('dmy_His') . '.jpg';
             
             \Illuminate\Support\Facades\Storage::disk('public_uploads')->put('attendance/' . $imageName, base64_decode($image));
 
-            $attendance->update([
-                'check_out_time' => $now->toTimeString(),
-                'check_out_photo' => 'uploads/attendance/' . $imageName,
-            ]);
+            //  Menggunakan 00:00:00 sebagai flag tanpa ubah DB
+            Attendance::updateOrCreate(
+                ['internship_id' => $internship->internship_id, 'attendance_date' => Carbon::today()],
+                [
+                    'attendance_id' => $attendance ? $attendance->attendance_id : 'ATT-' . strtoupper(\Illuminate\Support\Str::random(7)),
+                    'check_in_time' => $attendance ? $attendance->check_in_time : '00:00:00',
+                    'check_in_photo' => $attendance ? $attendance->check_in_photo : 'uploads/attendance/lupa_absen.png',
+                    'check_out_time' => $now->toTimeString(),
+                    'check_out_photo' => 'uploads/attendance/' . $imageName,
+                    'status' => 'hadir'
+                ]
+            );
 
-            return response()->json(['success' => 'Berhasil absen pulang, hati-hati di jalan!']);
-
+            return response()->json(['success' => 'Berhasil absen pulang!']);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Gagal: ' . $e->getMessage()], 500);
         }
-    }
-
-    // 5. --- Halaman dan Proses Izin ---
-    public function indexIzin()
-    {
-        $internship = Internship::where('user_id', Auth::id())->first();
-        
-        $leaveRequests = LeaveRequest::where('internship_id', $internship->internship_id)
-            ->latest()
-            ->get();
-
-        return view('user.izin', compact('leaveRequests'));
-    }
-
-    public function storeIzin(Request $request)
-    {
-        // Cek apakah periode PKL masih berlaku
-        $internship = Internship::where('user_id', Auth::id())->first();
-        $today = Carbon::today();
-        $endDate = Carbon::parse($internship->end_date)->endOfDay();
-        if ($today->gt($endDate)) {
-            return back()->with('error', 'Periode PKL Anda telah berakhir. Pengajuan izin tidak dapat dilakukan.');
-        }
-
-        $request->validate([
-            'leave_date' => 'required|date', 
-            'reason' => 'required|string|max:255',
-            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
-        ], [
-            'document.max' => 'Gagal! Ukuran file lampiran tidak boleh lebih dari 2MB.',
-            'document.mimes' => 'Gagal! Format file harus PDF, JPG, atau PNG.',
-        ]);
-
-        $exists = LeaveRequest::where('internship_id', $internship->internship_id)
-            ->whereDate('leave_date', $request->leave_date)
-            ->exists();
-
-        if ($exists) {
-            return back()->with('error', 'Anda sudah mengajukan izin untuk tanggal ' . Carbon::parse($request->leave_date)->format('d M Y') . '.');
-        }
-
-        $documentPath = null;
-        if ($request->hasFile('document')) {
-            $file = $request->file('document');
-            $filename = 'leave_' . Str::slug($internship->internship_id) . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/leave'), $filename);
-            $documentPath = 'uploads/leave/' . $filename;
-        }
-
-        LeaveRequest::create([
-            'leave_id' => 'LR-' . strtoupper(Str::random(7)),
-            'internship_id' => $internship->internship_id,
-            'leave_date' => $request->leave_date,
-            'reason' => $request->reason,
-            'document_path' => $documentPath,
-            'status' => 'menunggu',
-        ]);
-
-        return redirect()->route('user.izin.index')->with('success', 'Pengajuan izin berhasil dikirim.');
-    }
-
-    public function destroyIzin($id)
-    {
-        $internship = Internship::where('user_id', Auth::id())->first();
-  
-        $leave = LeaveRequest::where('leave_id', $id)
-            ->where('internship_id', $internship->internship_id)
-            ->firstOrFail();
-
-        if ($leave->status !== 'menunggu') {
-            return back()->with('error', 'Gagal! Izin yang sudah diproses admin tidak dapat dibatalkan.');
-        }
-
-        if ($leave->document_path && file_exists(public_path($leave->document_path))) {
-            unlink(public_path($leave->document_path));
-        }
-
-        $leave->delete();
-        return redirect()->route('user.izin.index')->with('success', 'Pengajuan izin berhasil dibatalkan.');
     }
 
     // --- 5. Rekap dan laporan pdf --- 

@@ -497,7 +497,6 @@ class AdminController extends Controller
     public function verifyReport($hash)
     {
         try {
-            // Cache hasil verifikasi selama 1 jam untuk menghindari re-encryption setiap kali
             $cacheKey = 'verify_report_' . substr($hash, 0, 20);
             
             $reportData = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addHours(1), function() use ($hash) {
