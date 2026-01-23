@@ -221,18 +221,25 @@
             </button>
         </div>
         <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            {{-- Sisi Masuk --}}
             <div class="space-y-4 text-center">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Foto Masuk</p>
-                <div class="aspect-square bg-slate-50 rounded-[2rem] overflow-hidden border-2 border-slate-100 flex flex-col items-center justify-center text-slate-300">
+                <div class="aspect-square bg-slate-50 rounded-[2.5rem] overflow-hidden border-2 border-slate-100 flex items-center justify-center relative shadow-inner">
                     <img id="img_check_in" src="" class="w-full h-full object-cover hidden">
-                    <div id="no_check_in" class="flex flex-col items-center"><i class="bi bi-camera-off text-4xl mb-2"></i><span class="text-[10px] font-bold uppercase tracking-tight">Belum Ada Foto</span></div>
+                    <div id="no_check_in" class="flex flex-col items-center transition-all">
+                        {{-- Diisi oleh JavaScript --}}
+                    </div>
                 </div>
             </div>
+
+            {{-- Sisi Pulang --}}
             <div class="space-y-4 text-center">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Foto Pulang</p>
-                <div class="aspect-square bg-slate-50 rounded-[2rem] overflow-hidden border-2 border-slate-100 flex flex-col items-center justify-center text-slate-300">
+                <div class="aspect-square bg-slate-50 rounded-[2.5rem] overflow-hidden border-2 border-slate-100 flex items-center justify-center relative shadow-inner">
                     <img id="img_check_out" src="" class="w-full h-full object-cover hidden">
-                    <div id="no_check_out" class="flex flex-col items-center"><i class="bi bi-camera-off text-4xl mb-2"></i><span class="text-[10px] font-bold uppercase tracking-tight">Belum Ada Foto</span></div>
+                    <div id="no_check_out" class="flex flex-col items-center transition-all">
+                        {{-- Diisi oleh JavaScript --}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -302,25 +309,53 @@
         const imgOut = document.getElementById('img_check_out');
         const noIn = document.getElementById('no_check_in');
         const noOut = document.getElementById('no_check_out');
+        
         document.getElementById('photo_user_name').innerText = name;
         const baseUrl = window.location.origin + "/";
 
-        if (checkIn && checkIn !== 'leave_approved.png') {
-            imgIn.src = baseUrl + checkIn; 
-            imgIn.classList.remove('hidden'); noIn.classList.add('hidden');
-        } else if (checkIn === 'leave_approved.png') {
-            noIn.innerHTML = '<i class="bi bi-file-earmark-check text-4xl mb-2 text-blue-400"></i><span class="text-[10px] font-bold uppercase">Izin Disetujui</span>';
-            imgIn.classList.add('hidden'); noIn.classList.remove('hidden');
-        } else {
-            imgIn.classList.add('hidden'); noIn.classList.remove('hidden');
+        // --- FOTO MASUK ---
+        // 1. Jika Izin Disetujui
+        if (checkIn === 'leave_approved.png') {
+            noIn.innerHTML = `
+                <div class="flex flex-col items-center text-blue-500">
+                    <i class="bi bi-file-earmark-check text-5xl mb-2"></i>
+                    <span class="text-[10px] font-black uppercase tracking-widest">Izin Disetujui</span>
+                </div>`;
+            imgIn.classList.add('hidden'); 
+            noIn.classList.remove('hidden');
+        } 
+        // 2. Jika Lupa Absen Masuk (Flag dari Controller)
+        else if (!checkIn || checkIn.includes('lupa_absen.png')) {
+            noIn.innerHTML = `
+                <div class="flex flex-col items-center text-amber-500">
+                    <i class="bi bi-exclamation-triangle-fill text-5xl mb-2"></i>
+                    <span class="text-[10px] font-black uppercase tracking-widest">Lupa Absen Masuk</span>
+                </div>`;
+            imgIn.classList.add('hidden'); 
+            noIn.classList.remove('hidden');
+        } 
+        // 3. Jika Ada Foto Asli
+        else {
+            imgIn.src = baseUrl + checkIn;
+            imgIn.classList.remove('hidden'); 
+            noIn.classList.add('hidden');
         }
 
-        if (checkOut) {
+        // --- LOGIKA FOTO PULANG ---
+        if (checkOut && checkOut.trim() !== "") {
             imgOut.src = baseUrl + checkOut;
-            imgOut.classList.remove('hidden'); noOut.classList.add('hidden');
+            imgOut.classList.remove('hidden'); 
+            noOut.classList.add('hidden');
         } else {
-            imgOut.classList.add('hidden'); noOut.classList.remove('hidden');
+            noOut.innerHTML = `
+                <div class="flex flex-col items-center text-slate-300">
+                    <i class="bi bi-camera-off text-5xl mb-2"></i>
+                    <span class="text-[10px] font-black uppercase tracking-widest">Belum Absen Pulang</span>
+                </div>`;
+            imgOut.classList.add('hidden'); 
+            noOut.classList.remove('hidden');
         }
+
         modal.classList.remove('hidden');
     }
 
