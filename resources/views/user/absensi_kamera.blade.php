@@ -6,21 +6,34 @@
     $canCheckIn = ($jamMenit >= '00:00' && $jamMenit <= '12:00');
     $canCheckOut = ($jamMenit >= '12:01' && $jamMenit <= '19:00');
 
-    // Kamera tetap muncul selama masih dalam jam operasional apa pun
-    $showCamera = ($canCheckIn || $canCheckOut);
+    /** 
+     * Kamera hanya muncul jika:
+     * 1. Belum absen sama sekali DAN masih dalam jam masuk.
+     * 2. Belum absen pulang DAN sudah masuk jam pulang (baik sudah absen masuk maupun belum).
+     */
+    $showCamera = false;
+    if (!$attendance && $canCheckIn) {
+        $showCamera = true;
+    } elseif ((!$attendance || !$attendance->check_out_time) && $canCheckOut) {
+        $showCamera = true;
+    }
+    
+    // Status apakah sudah absen masuk (untuk menampilkan pesan tunggu)
+    $waitingForCheckOut = ($attendance && !$attendance->check_out_time && $canCheckIn);
 @endphp
 
 @extends('layouts.peserta')
 
 @section('content')
+@section('content')
 <div class="max-w-4xl mx-auto space-y-8 pb-20">
     <div class="text-center">
         <h2 class="text-3xl font-black text-slate-800 tracking-tight">Presensi Harian</h2>
         <div class="mt-3 flex justify-center gap-2">
-            <span class="px-4 py-1.5 {{ $canCheckIn ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase tracking-wider border {{ $canCheckIn ? 'border-blue-200' : 'border-slate-200' }}">
+            <span class="px-4 py-1.5 {{ $canCheckIn ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-400 border-slate-200' }} rounded-xl text-[10px] font-black uppercase tracking-wider border">
                 Masuk: 00:00 - 12:00
             </span>
-            <span class="px-4 py-1.5 {{ $canCheckOut ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400' }} rounded-xl text-[10px] font-black uppercase tracking-wider border {{ $canCheckOut ? 'border-emerald-200' : 'border-slate-200' }}">
+            <span class="px-4 py-1.5 {{ $canCheckOut ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200' }} rounded-xl text-[10px] font-black uppercase tracking-wider border">
                 Pulang: 12:01 - 19:00
             </span>
         </div>
@@ -28,7 +41,7 @@
 
     <div class="bg-white p-8 sm:p-12 rounded-[3rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col items-center">
         
-        {{-- Cek Jika Sudah Selesai--}}
+        {{-- Kondisi 1: Sudah selese smemua --}}
         @if($attendance && $attendance->check_out_time)
             <div class="text-center py-12">
                 <div class="w-28 h-28 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-6xl mx-auto mb-8 shadow-inner">
@@ -39,40 +52,49 @@
                 <a href="{{ route('user.dashboard') }}" class="mt-10 inline-block bg-slate-800 text-white px-10 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-700 transition-all shadow-lg">Kembali ke Dashboard</a>
             </div>
 
+        {{-- Kondisi 2: Sudah absen masuk, tapi belum jam pulang --}}
+        @elseif($waitingForCheckOut)
+            <div class="text-center py-12">
+                <div class="w-28 h-28 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-5xl mx-auto mb-8">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <h4 class="text-xl font-black text-slate-800 uppercase tracking-tight">Sesi Masuk Berhasil</h4>
+                <p class="text-slate-400 text-xs font-bold mt-2 leading-relaxed uppercase tracking-widest">
+                    Anda sudah melakukan presensi masuk.<br>
+                    Sesi presensi pulang akan dibuka mulai pukul 12:01 WIB.
+                </p>
+                <a href="{{ route('user.dashboard') }}" class="mt-8 inline-block bg-slate-100 text-slate-600 px-8 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all">Kembali ke Dashboard</a>
+            </div>
+
         @else
-            {{-- Seleksi tipe absensi --}}
+            {{-- Kondisi 3: Area Absensi Aktif (Masuk atau Pulang) --}}
             <div class="flex gap-4 mb-10 w-full max-w-md">
-                {{-- Opsi Masuk --}}
                 <label class="flex-1 cursor-pointer group">
                     <input type="radio" name="absensi_type" value="masuk" id="type_masuk" class="hidden peer" 
                         {{ (!$attendance && $canCheckIn) ? 'checked' : '' }} 
                         {{ ($attendance || !$canCheckIn) ? 'disabled' : '' }}>
-                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50">
+                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50 group-hover:border-blue-200">
                         <i class="bi bi-box-arrow-in-right text-3xl mb-2 block"></i>
                         <span class="text-[11px] font-black uppercase tracking-widest block">Masuk</span>
                     </div>
                 </label>
 
-                {{-- Opsi Pulang --}}
                 <label class="flex-1 cursor-pointer group">
                     <input type="radio" name="absensi_type" value="pulang" id="type_pulang" class="hidden peer" 
                         {{ ($canCheckOut && (!$attendance || !$attendance->check_out_time)) ? 'checked' : '' }}
                         {{ (!$canCheckOut || ($attendance && $attendance->check_out_time)) ? 'disabled' : '' }}>
-                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50">
+                    <div class="p-5 border-2 border-slate-100 rounded-[2rem] text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-disabled:opacity-40 peer-disabled:bg-slate-50 group-hover:border-emerald-200">
                         <i class="bi bi-box-arrow-right text-3xl mb-2 block"></i>
                         <span class="text-[11px] font-black uppercase tracking-widest block">Pulang</span>
                     </div>
                 </label>
             </div>
 
-            {{-- Area Kamera/ Status Terttutup --}}
             @if($showCamera)
                 <div class="relative w-full max-w-md mx-auto mb-10 group">
-                    <div class="absolute -inset-4 bg-gradient-to-tr from-blue-50 to-cyan-50 rounded-[3.5rem] -z-10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute -inset-4 bg-gradient-to-tr from-blue-50 to-cyan-50 rounded-[3.5rem] -z-10 opacity-50"></div>
                     <div class="relative aspect-square bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
                         <div class="relative w-full h-full rounded-[2.5rem] overflow-hidden bg-slate-100">
-                            
-                            {{-- Area kamera --}}
                             <div id="camera-wrapper" class="relative w-full h-full flex items-center justify-center">
                                 <div id="my_camera" class="w-full h-full"></div>
                                 <div id="results" class="absolute inset-0 hidden w-full h-full"></div>
@@ -93,7 +115,6 @@
                     </button>
                 </div>
             @else
-                {{-- Status Terkunci --}}
                 <div class="p-10 bg-red-50 rounded-[2.5rem] border border-red-100 text-red-600 text-center max-w-sm mx-auto">
                     <i class="bi bi-clock-history text-5xl block mb-4 opacity-50"></i>
                     <p class="text-lg font-black leading-tight uppercase tracking-tight">Akses Terkunci</p>
