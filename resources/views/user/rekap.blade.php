@@ -21,7 +21,7 @@
                         </option>
                     @endfor
                 </select>
-                <button type="submit" class="bg-slate-800 text-white px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-700 transition shadow-lg shadow-slate-200">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                     Cek
                 </button>
             </form>
