@@ -27,8 +27,8 @@ class Internship extends Model
     ];
 
     /**
-     * Menghitung total hari seharusnya hadir berdasarkan tanggal pembuatan akun
-     * dan periode PKL yang sedang berjalan.
+     * Menghitung total hari kerja efektif (Senin-Jumat) dalam rentang PKL
+     * dengan mempertimbangkan tanggal pembuatan akun peserta.
      */
     public function getTotalSeharusnyaHadir($bulan = null, $tahun = null)
     {
@@ -37,7 +37,7 @@ class Internship extends Model
         $internEnd = Carbon::parse($this->end_date)->endOfDay();
         $now = Carbon::now()->startOfDay();
 
-        // Titik awal adalah tanggal terbaru antara mulai PKL atau pembuatan akun
+        // Titik awal perhitungan adalah mana yang lebih baru antara tanggal PKL atau pembuatan akun
         $effectiveStart = $internStart->gt($accountCreated) ? $internStart : $accountCreated;
 
         if ($bulan && $tahun) {
@@ -62,7 +62,6 @@ class Internship extends Model
             $finalLimit->toDateString()
         ])->pluck('holiday_date')->toArray();
 
-        // Hitung hari kerja efektif mengecualikan weekend dan libur
         $totalHariEfektif = $start->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
             return !$date->isWeekend() && !in_array($date->toDateString(), $holidays);
         }, $finalLimit);
@@ -70,16 +69,33 @@ class Internship extends Model
         return (int) $totalHariEfektif + 1;
     }
 
+    /**
+     * Relasi ke model User
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    /**
+     * Relasi ke model Major (Penting untuk menghindari RelationNotFoundException)
+     */
+    public function major(): BelongsTo
+    {
+        return $this->belongsTo(Major::class, 'major_id', 'major_id');
+    }
+
+    /**
+     * Relasi ke model Institution
+     */
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class, 'institution_id', 'institution_id');
     }
 
+    /**
+     * Relasi ke data kehadiran
+     */
     public function attendance()
     {
         return $this->hasMany(Attendance::class, 'internship_id', 'internship_id');
