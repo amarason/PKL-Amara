@@ -27,26 +27,23 @@ class Internship extends Model
     ];
 
     /**
-     * Menghitung total hari kerja efektif selama periode PKL (selain Sabtu, Minggu, dan Hari Libur Nasional)
+     * Menghitung total hari seharusnya hadir berdasarkan tanggal pembuatan akun
+     * dan periode PKL yang sedang berjalan.
      */
     public function getTotalSeharusnyaHadir($bulan = null, $tahun = null)
     {
         $internStart = Carbon::parse($this->start_date)->startOfDay();
-        // Ambil tanggal pembuatan akun peserta
         $accountCreated = Carbon::parse($this->user->created_at)->startOfDay();
         $internEnd = Carbon::parse($this->end_date)->endOfDay();
         $now = Carbon::now()->startOfDay();
 
-        /** Titik awal perhitungan adalah tanggal yang paling terakhir antara 
-         * Tanggal Mulai PKL atau Tanggal Akun Dibuat.
-         */
+        // Titik awal adalah tanggal terbaru antara mulai PKL atau pembuatan akun
         $effectiveStart = $internStart->gt($accountCreated) ? $internStart : $accountCreated;
 
         if ($bulan && $tahun) {
             $monthStart = Carbon::create($tahun, $bulan, 1)->startOfMonth();
             $monthEnd = Carbon::create($tahun, $bulan, 1)->endOfMonth();
 
-            // Perhitungan tetap di dalam masa aktif akun dan masa PKL
             $start = $effectiveStart->gt($monthStart) ? $effectiveStart : $monthStart;
             $limit = $internEnd->lt($monthEnd) ? $internEnd : $monthEnd;
         } else {
@@ -65,6 +62,7 @@ class Internship extends Model
             $finalLimit->toDateString()
         ])->pluck('holiday_date')->toArray();
 
+        // Hitung hari kerja efektif mengecualikan weekend dan libur
         $totalHariEfektif = $start->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
             return !$date->isWeekend() && !in_array($date->toDateString(), $holidays);
         }, $finalLimit);
@@ -72,33 +70,16 @@ class Internship extends Model
         return (int) $totalHariEfektif + 1;
     }
 
-    /**
-     * Relasi ke User 
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    /**
-     * Relasi ke Major
-     */
-    public function major(): BelongsTo
-    {
-        return $this->belongsTo(Major::class, 'major_id', 'major_id');
-    }
-
-    /**
-     * Relasi ke Institution
-     */
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class, 'institution_id', 'institution_id');
     }
 
-    /**
-     * Relasi ke tabel Attendance
-     */
     public function attendance()
     {
         return $this->hasMany(Attendance::class, 'internship_id', 'internship_id');
