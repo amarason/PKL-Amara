@@ -64,9 +64,18 @@
                                 </form>
                                 @endif
 
-                                <button type="button" onclick="openEditModal('{{ $row->internship_id }}')" class="text-slate-300 hover:text-blue-500 transition">
+                                <button type="button" onclick="openEditModal('{{ $row->internship_id }}')" class="text-slate-300 hover:text-blue-500 transition" title="Edit Data">
                                     <i class="bi bi-pencil-square text-lg"></i>
                                 </button>
+
+                                {{-- Tombol Hapus Permanen --}}
+                                <form id="form-hapus-{{ $row->internship_id }}" action="{{ route('admin.peserta.destroy', $row->internship_id) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" onclick="confirmHapus('{{ $row->internship_id }}', '{{ $row->user->name }}')" class="text-slate-300 hover:text-red-500 transition" title="Hapus Permanen">
+                                        <i class="bi bi-trash3-fill text-lg"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -129,6 +138,30 @@
 </div>
 
 <script>
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: "{{ session('success') }}",
+            showConfirmButton: true,
+            confirmButtonColor: '#3B82F6',
+            confirmButtonText: 'Selesai',
+            customClass: { popup: 'rounded-[2rem]' }
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: "{{ session('error') }}",
+            showConfirmButton: true,
+            confirmButtonColor: '#EF4444',
+            confirmButtonText: 'Tutup',
+            customClass: { popup: 'rounded-[2rem]' }
+        });
+    @endif
+
     function confirmSelesai(id, nama) {
         Swal.fire({
             title: 'Konfirmasi Selesai',
@@ -159,8 +192,25 @@
         })
     }
 
+    function confirmHapus(id, nama) {
+        Swal.fire({
+            title: 'Hapus Permanen?',
+            text: `Data ${nama} akan dihapus permanen dari database!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            customClass: { popup: 'rounded-[2rem]' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('form-hapus-' + id).submit();
+            }
+        });
+    }
+
     function openEditModal(id) {
-        const encodedId = encodeURIComponent(id);
+        const encodedId = encodeURIComponent(id); 
         fetch(`/admin/peserta/edit/${encodedId}`)
             .then(response => response.json())
             .then(data => {
@@ -171,6 +221,7 @@
                 document.getElementById('edit_start_date').value = data.start_date;
                 document.getElementById('edit_end_date').value = data.end_date;
                 document.getElementById('formEditPeserta').action = `/admin/peserta/update/${encodedId}`;
+                
                 const modal = document.getElementById('modalEdit');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -181,11 +232,6 @@
         const modal = document.getElementById('modalEdit');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('modalEdit');
-        if (event.target == modal) { closeEditModal(); }
     }
 </script>
 @endsection

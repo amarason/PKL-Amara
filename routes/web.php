@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/peserta/update/{id}', [AdminController::class, 'updatePeserta'])->name('admin.peserta.update')->where('id', '.*');
         Route::post('/peserta/update-status/{id}', [AdminController::class, 'updateStatus'])->name('admin.peserta.updateStatus')->where('id', '.*');
         Route::post('/peserta/reset-password/{id}', [AdminController::class, 'resetPassword'])->name('admin.peserta.resetPassword')->where('id', '.*');
+        Route::delete('/peserta/delete/{id}', [AdminController::class, 'destroy'])->name('admin.peserta.destroy')->where('id', '.*');
 
         // Fitur Manajemen Instansi & Jurusan
         Route::post('/institution/quick-store', [AdminController::class, 'storeInstitution'])->name('admin.institution.store');

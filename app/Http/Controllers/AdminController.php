@@ -165,7 +165,6 @@ class AdminController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'login_id' => 'required|unique:users,login_id',
             'name' => 'required',
             'institution_id' => 'required',
             'major_id' => 'required',
@@ -178,16 +177,23 @@ class AdminController extends Controller
                 $inst = Institution::where('institution_id', $request->institution_id)->first();
                 $strata = str_contains(strtoupper($inst->institution_name), 'SMK') ? 'SMK' : 'S1';
 
+                $internshipId = $this->idService->generateInternshipId($strata);
+                
+                // Buat Login ID khusus (Format: IP26/Strata/No)
+                $loginId = str_replace('PKL', 'IP' . date('y'), $internshipId);
+
+    
                 $user = User::create([
-                    'login_id' => $request->login_id,
+                    'login_id' => $loginId,
                     'name' => $request->name,
                     'role_id' => 'ROLE_PESERTA',
-                    'password' => Hash::make($request->login_id),
+                    'password' => Hash::make($loginId),
                     'is_active' => 1,
                 ]);
 
+                // Simpan Data Internship (Tetap pakai PKL)
                 Internship::create([
-                    'internship_id' => $this->idService->generateInternshipId($strata),
+                    'internship_id' => $internshipId,
                     'user_id' => $user->id,
                     'institution_id' => $request->institution_id,
                     'major_id' => $request->major_id,
@@ -197,9 +203,9 @@ class AdminController extends Controller
                 ]);
             });
 
-            return back()->with('success', "Peserta atas nama {$request->name} berhasil didaftarkan.");
+            return back()->with('success', "Peserta berhasil didaftarkan.");
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal mendaftarkan peserta: ' . $e->getMessage());
+            return back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 
@@ -217,34 +223,68 @@ class AdminController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'login_id' => 'required|string',
+            'institution_id' => 'required',
+            'major_id' => 'required',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
         ]);
 
         try {
-            DB::transaction(function () use ($request, $id) {
-                $peserta = Internship::where('internship_id', $id)->firstOrFail();
-                
-                $peserta->update([
-                    'start_date' => $request->start_date,
-                    'end_date' => $request->end_date,
-                    'institution_id' => $request->institution_id ?? $peserta->institution_id,
-                    'major_id' => $request->major_id ?? $peserta->major_id,
-                ]);
+            DB::beginTransaction();
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-                $peserta->user->update([
-                    'name' => $request->name,
-                    'login_id' => $request->login_id,
-                ]);
-            });
+            $peserta = Internship::where('internship_id', $id)->firstOrFail();
+            $oldId = $peserta->internship_id;
 
-            return back()->with('success', 'Data peserta berhasil diperbarui.');
+            $inst = Institution::where('institution_id', $request->institution_id)->first();
+            $strata = str_contains(strtoupper($inst->institution_name), 'SMK') ? 'SMK' : 'S1';
+            
+            $segments = explode('/', $oldId);
+            $oldStrata = $segments[1] ?? 'S1';
+            $finalInternId = $oldId;
+
+            // Jika strata berubah, buat ID PKL baru
+            if ($strata !== $oldStrata) {
+                $finalInternId = $this->idService->generateInternshipId($strata);
+            }
+
+            // Generate Login ID (IP) berdasarkan ID PKL akhir
+            $finalLoginId = str_replace('PKL', 'IP' . date('y'), $finalInternId);
+
+            // Update User
+            $peserta->user->update([
+                'name' => $request->name,
+                'login_id' => $finalLoginId,
+            ]);
+
+            // Update Internship secara manual
+            DB::table('internship')->where('internship_id', $oldId)->update([
+                'internship_id' => $finalInternId,
+                'institution_id' => $request->institution_id,
+                'major_id' => $request->major_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'updated_at' => now()
+            ]);
+
+            // Sinkronisasi Tabel Anak (Gunakan nama tabel tunggal: leave_request)
+            if ($finalInternId !== $oldId) {
+                DB::table('attendance')->where('internship_id', $oldId)->update(['internship_id' => $finalInternId]);
+                DB::table('leave_request')->where('internship_id', $oldId)->update(['internship_id' => $finalInternId]);
+            }
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            DB::commit();
+
+            return back()->with('success', "Data diperbarui. ID Login baru: $finalLoginId");
+
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memperbarui data.');
+            DB::rollBack();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
         }
     }
-
+    
     public function updateStatus(Request $request, $id)
     {
         Internship::where('internship_id', $id)->update(['status' => $request->status]);
@@ -265,6 +305,24 @@ class AdminController extends Controller
             return back()->with('success', "Password peserta {$user->name} berhasil direset ke password default (ID PKL).");
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mereset password: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            DB::transaction(function () use ($id) {
+                $peserta = Internship::where('internship_id', $id)->firstOrFail();
+                $userId = $peserta->user_id;
+                Attendance::where('internship_id', $id)->delete();
+                LeaveRequest::where('internship_id', $id)->delete();
+                $peserta->delete();
+                User::where('id', $userId)->delete();
+            });
+
+            return back()->with('success', 'Peserta berhasil dihapus permanen dari database.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
         }
     }
 
