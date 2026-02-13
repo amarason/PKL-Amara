@@ -290,7 +290,7 @@ class UserController extends Controller
     }
 
     /**
-     * Export Laporan PDF untuk peserta dengan fitur tanda tangan QR Code.
+     * Export Laporan PDF 
      */
     public function exportRekapPdf(Request $request)
     {
@@ -300,24 +300,74 @@ class UserController extends Controller
         $month = $request->get('month');
         $year = $request->get('year', date('Y'));
 
+        // 1. Ambil data asli (Hadir/Izin) dari database dan buat mapping berdasarkan tanggal
         $query = Attendance::where('internship_id', $internship->internship_id);
-
         if ($month) {
             $query->whereMonth('attendance_date', $month)->whereYear('attendance_date', $year);
             $periodeLabel = Carbon::createFromFormat('m', $month)->translatedFormat('F') . " " . $year;
         } else {
             $periodeLabel = "Seluruh Periode PKL";
         }
+        $dbAttendances = $query->get()->keyBy(function($item) {
+            return Carbon::parse($item->attendance_date)->toDateString();
+        });
 
-        $attendances = $query->orderBy('attendance_date', 'asc')->get();
+        // 2. Tentukan Rentang Tanggal yang harus dievaluasi (Sinkron dengan Logika Alpha)
+        $internStart = Carbon::parse($internship->start_date)->startOfDay();
+        $accountCreated = Carbon::parse($internship->user->created_at)->startOfDay();
+        $internEnd = Carbon::parse($internship->end_date)->endOfDay();
+        $now = Carbon::now('Asia/Jakarta')->startOfDay();
 
+        $effectiveStart = $internStart->gt($accountCreated) ? $internStart : $accountCreated;
+        
+        if ($month) {
+            $mStart = Carbon::create($year, $month, 1)->startOfMonth();
+            $mEnd = Carbon::create($year, $month, 1)->endOfMonth();
+            $start = $effectiveStart->gt($mStart) ? $effectiveStart : $mStart;
+            $limit = $internEnd->lt($mEnd) ? $internEnd : $mEnd;
+        } else {
+            $start = $effectiveStart;
+            $limit = $internEnd;
+        }
+        $finalLimit = $now->lt($limit) ? $now : $limit;
+
+        // 3. Generate baris data lengkap: Jika tanggal kerja tidak ada di DB, buat baris 'Alpha'
+        $attendances = collect();
+        if ($start <= $finalLimit) {
+            $holidays = \App\Models\Holiday::whereBetween('holiday_date', [
+                $start->toDateString(), 
+                $finalLimit->toDateString()
+            ])->pluck('holiday_date')->toArray();
+
+            $current = $start->copy();
+            while ($current <= $finalLimit) {
+                $dateStr = $current->toDateString();
+                // Hanya proses jika hari kerja (bukan weekend/libur)
+                if (!$current->isWeekend() && !in_array($dateStr, $holidays)) {
+                    if ($dbAttendances->has($dateStr)) {
+                        $attendances->push($dbAttendances->get($dateStr));
+                    } else {
+                        // Baris virtual Alpha
+                        $attendances->push((object)[
+                            'attendance_date' => $dateStr,
+                            'check_in_time' => null,
+                            'check_out_time' => null,
+                            'status' => 'alpha'
+                        ]);
+                    }
+                }
+                $current->addDay();
+            }
+        }
+
+        // 4. Statistik akhir untuk ringkasan di atas tabel
         $stats = [
             'hadir' => $attendances->where('status', 'hadir')->count(),
             'izin'  => $attendances->where('status', 'izin')->count(),
             'alpha' => $attendances->where('status', 'alpha')->count(),
         ];
 
-        // Penulisan metadata untuk verifikasi scan QR Code
+        // 5. Generate QR Code & Logo
         $hashData = $internship->internship_id . '|' . ($month ?? 'all') . '|' . $year;
         $encryptedHash = Crypt::encryptString($hashData);
         $verifyUrl = route('report.verify', ['hash' => $encryptedHash]);
@@ -332,14 +382,14 @@ class UserController extends Controller
 
         $fileName = "Rekap_Absensi_{$internship->user->name}.pdf";
 
-        // Simpan salinan PDF ke storage untuk arsip sistem
+        // Simpan arsip di server
         $pdfContent = $pdf->output();
         $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
         Storage::disk('local')->put($filePath, $pdfContent);
 
-        // Pencatatan metadata laporan ke database
-        $documentService = new \App\Services\AttendanceDocumentService();
+        // Metadata untuk verifikasi scan QR
         try {
+            $documentService = new \App\Services\AttendanceDocumentService();
             $documentService->saveDocument(
                 internshipId: $internship->internship_id,
                 filePath: $filePath,

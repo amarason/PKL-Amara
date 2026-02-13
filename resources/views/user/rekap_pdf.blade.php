@@ -55,10 +55,10 @@
             <thead>
                 <tr>
                     <th width="5%">No</th>
-                    <th width="20%">Tanggal</th>
+                    <th width="25%">Tanggal</th>
                     <th width="15%">Masuk</th>
                     <th width="15%">Pulang</th>
-                    <th width="45%">Status / Keterangan</th>
+                    <th width="40%">Status / Keterangan</th>
                 </tr>
             </thead>
             <tbody>
@@ -66,9 +66,10 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($att->attendance_date)->translatedFormat('d M Y') }}</td>
+                    {{-- Tampilkan jam atau tanda strip jika Alpha/Izin --}}
                     <td>{{ $att->check_in_time ? \Carbon\Carbon::parse($att->check_in_time)->format('H:i') : '--:--' }}</td>
                     <td>{{ $att->check_out_time ? \Carbon\Carbon::parse($att->check_out_time)->format('H:i') : '--:--' }}</td>
-                    <td class="status-{{ $att->status }}">
+                    <td class="status-{{ $att->status }}" style="{{ $att->status == 'alpha' ? 'color: red; font-weight: bold;' : '' }}">
                         {{ strtoupper($att->status) }}
                     </td>
                 </tr>
