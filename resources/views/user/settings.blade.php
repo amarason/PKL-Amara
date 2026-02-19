@@ -5,7 +5,7 @@
     {{-- Header --}}
     <div>
         <h2 class="text-3xl font-black text-slate-800 tracking-tight">Keamanan Akun</h2>
-        <p class="text-slate-400 font-bold text-sm mt-1">Perbarui kata sandi Anda secara berkala untuk menjaga keamanan data.</p>
+        <p class="text-slate-400 font-bold text-sm mt-1">Perbarui kata sandi Anda secara berkala untuk menjaga keamanan data</p>
     </div>
 
     <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">

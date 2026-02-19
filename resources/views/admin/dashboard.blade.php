@@ -7,14 +7,26 @@
         Selamat Datang Admin
     </h2>
 
-    <div class="relative w-full md:w-96">
-        <i class="bi bi-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input
-            type="text"
-            class="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl
-                   outline-none focus:ring-4 focus:ring-blue-50 transition shadow-sm"
-            placeholder="Cari nama peserta...">
-    </div>
+    {{-- PENCARIAN --}}
+    <form action="{{ route('admin.dashboard') }}" method="GET" class="w-full md:w-auto">
+        <div class="relative w-full md:w-96 flex gap-2">
+            <div class="relative w-full">
+                <i class="bi bi-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input
+                    type="text"
+                    name="search" 
+                    value="{{ request('search') }}"
+                    class="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl
+                           outline-none focus:ring-4 focus:ring-blue-50 transition shadow-sm"
+                    placeholder="Cari nama atau ID Peserta...">
+            </div>
+            
+            {{-- Tombol Submit --}}
+            <button type="submit" class="bg-blue-600 text-white px-6 rounded-2xl hover:bg-blue-700 transition">
+                <i class="bi bi-arrow-right text-lg"></i>
+            </button>
+        </div>
+    </form>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -103,8 +115,15 @@
                     </td>
                     
                     <td class="px-6 py-4">
-                        <span class="{{ $row->status == 'hadir' ? 'bg-[#10B981]' : ($row->status == 'izin' ? 'bg-blue-500' : 'bg-[#FBBF24]') }}
-                                     text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase">
+                        <span class="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border
+                            @if($row->status == 'hadir')
+                                bg-[#10B981] text-white border-transparent
+                            @elseif($row->status == 'izin')
+                                bg-[#FFFED6] text-yellow-600 border-yellow-200/50
+                            @else
+                                bg-red-50 text-red-600 border-red-200
+                            @endif
+                        ">
                             {{ $row->status }}
                         </span>
                     </td>

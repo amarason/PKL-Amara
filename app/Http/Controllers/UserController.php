@@ -9,6 +9,7 @@ use App\Services\AttendanceDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB; // WAJIB: Tambahkan ini untuk akses tabel libur mentah
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Hash;
@@ -72,6 +73,8 @@ class UserController extends Controller
         $totalIzin = $allAtt->where('status', 'izin')->count();
         
         $totalHadir = $h_lengkap + $h_lupa;
+        
+        // Memanggil fungsi dari Model yang SUDAH DIPERBAIKI (Sinkron Admin)
         $seharusnyaHadir = $internship->getTotalSeharusnyaHadir();
         $totalAlpha = max(0, $seharusnyaHadir - ($totalHadir + $totalIzin));
 
@@ -88,10 +91,8 @@ class UserController extends Controller
      */
     public function indexAbsensi()
     {
-        // Mengambil data internship HANYA untuk user yang sedang login
         $internship = Internship::where('user_id', Auth::id())->first();
         
-        // Validasi Status: Jika admin mengubah status menjadi selain 'aktif', akses ditolak
         if (!$internship || $internship->status !== 'aktif') {
             return redirect()->route('user.dashboard')->with('error', 'Status PKL Anda sudah berakhir. Fitur presensi dinonaktifkan.');
         }
@@ -99,12 +100,13 @@ class UserController extends Controller
         $today = Carbon::today('Asia/Jakarta');
         $endDate = Carbon::parse($internship->end_date)->endOfDay();
         
-        // Validasi rentang tanggal PKL
         if ($today->gt($endDate)) {
             return redirect()->route('user.dashboard')->with('error', 'Periode PKL Anda telah berakhir.');
         }
         
-        $isHoliday = \App\Models\Holiday::whereDate('holiday_date', $today)->exists();
+        // Cek Libur menggunakan DB::table agar konsisten
+        $isHoliday = DB::table('holidays')->where('holiday_date', $today->toDateString())->exists();
+        
         if ($today->isWeekend() || $isHoliday) {
             return redirect()->route('user.dashboard')->with('error', 'Presensi dinonaktifkan pada hari libur atau akhir pekan.');
         }
@@ -112,7 +114,6 @@ class UserController extends Controller
         $attendance = Attendance::where('internship_id', $internship->internship_id)
             ->whereDate('attendance_date', $today)->first();
 
-        // MELEWATKAN variabel internship agar logic di Blade akurat
         return view('user.absensi_kamera', compact('attendance', 'internship'));
     }
 
@@ -158,7 +159,7 @@ class UserController extends Controller
     }
 
     /**
-     * Menyimpan data presensi pulang (Mendukung kondisi lupa absen masuk)
+     * Menyimpan data presensi pulang
      */
     public function storePulang(Request $request)
     {
@@ -201,7 +202,7 @@ class UserController extends Controller
     }
 
     /**
-     * CRUD Perizinan (index, store, destroy)
+     * CRUD Perizinan
      */
     public function indexIzin()
     {
@@ -290,7 +291,8 @@ class UserController extends Controller
     }
 
     /**
-     * Export Laporan PDF 
+     * Export Laporan PDF (PERBAIKAN UTAMA)
+     * Menggunakan DB::table dan Strict Comparison untuk sinkronisasi libur.
      */
     public function exportRekapPdf(Request $request)
     {
@@ -300,7 +302,7 @@ class UserController extends Controller
         $month = $request->get('month');
         $year = $request->get('year', date('Y'));
 
-        // 1. Ambil data asli (Hadir/Izin) dari database dan buat mapping berdasarkan tanggal
+        // 1. Ambil data absensi riil dari database
         $query = Attendance::where('internship_id', $internship->internship_id);
         if ($month) {
             $query->whereMonth('attendance_date', $month)->whereYear('attendance_date', $year);
@@ -308,11 +310,12 @@ class UserController extends Controller
         } else {
             $periodeLabel = "Seluruh Periode PKL";
         }
+        // Mapping berdasarkan tanggal string
         $dbAttendances = $query->get()->keyBy(function($item) {
-            return Carbon::parse($item->attendance_date)->toDateString();
+            return Carbon::parse($item->attendance_date)->format('Y-m-d');
         });
 
-        // 2. Tentukan Rentang Tanggal yang harus dievaluasi (Sinkron dengan Logika Alpha)
+        // 2. Tentukan Rentang Tanggal
         $internStart = Carbon::parse($internship->start_date)->startOfDay();
         $accountCreated = Carbon::parse($internship->user->created_at)->startOfDay();
         $internEnd = Carbon::parse($internship->end_date)->endOfDay();
@@ -329,25 +332,37 @@ class UserController extends Controller
             $start = $effectiveStart;
             $limit = $internEnd;
         }
+        // Batas akhir adalah hari ini (tidak menghitung masa depan)
         $finalLimit = $now->lt($limit) ? $now : $limit;
 
-        // 3. Generate baris data lengkap: Jika tanggal kerja tidak ada di DB, buat baris 'Alpha'
+        // 3. Generate baris data lengkap
         $attendances = collect();
+
         if ($start <= $finalLimit) {
-            $holidays = \App\Models\Holiday::whereBetween('holiday_date', [
-                $start->toDateString(), 
-                $finalLimit->toDateString()
-            ])->pluck('holiday_date')->toArray();
+            // FIX: Gunakan DB::table agar format tanggal sama persis dengan yang di Model Internship
+            $holidays = DB::table('holidays')
+                ->whereBetween('holiday_date', [
+                    $start->format('Y-m-d'), 
+                    $finalLimit->format('Y-m-d')
+                ])
+                ->pluck('holiday_date')
+                ->toArray();
 
             $current = $start->copy();
+            
+            // Loop harian
             while ($current <= $finalLimit) {
-                $dateStr = $current->toDateString();
-                // Hanya proses jika hari kerja (bukan weekend/libur)
+                // Konversi tanggal loop ke format string Y-m-d agar in_array bekerja 100%
+                $dateStr = $current->format('Y-m-d');
+                
+                // Cek: Bukan Weekend & Bukan Libur Nasional
                 if (!$current->isWeekend() && !in_array($dateStr, $holidays)) {
+                    
                     if ($dbAttendances->has($dateStr)) {
+                        // Jika ada data absen di DB, masukkan
                         $attendances->push($dbAttendances->get($dateStr));
                     } else {
-                        // Baris virtual Alpha
+                        // Jika tidak ada data absen tapi hari kerja -> ALPHA
                         $attendances->push((object)[
                             'attendance_date' => $dateStr,
                             'check_in_time' => null,
@@ -360,20 +375,23 @@ class UserController extends Controller
             }
         }
 
-        // 4. Statistik akhir untuk ringkasan di atas tabel
+        // Urutkan dari tanggal terbaru
+        $attendances = $attendances->sortByDesc('attendance_date');
+
+        // 4. Statistik akhir
         $stats = [
             'hadir' => $attendances->where('status', 'hadir')->count(),
             'izin'  => $attendances->where('status', 'izin')->count(),
             'alpha' => $attendances->where('status', 'alpha')->count(),
         ];
 
-        // 5. Generate QR Code & Logo
+        // 5. Generate PDF & QR
         $hashData = $internship->internship_id . '|' . ($month ?? 'all') . '|' . $year;
         $encryptedHash = Crypt::encryptString($hashData);
         $verifyUrl = route('report.verify', ['hash' => $encryptedHash]);
         $qrcode = base64_encode(QrCode::format('svg')->size(90)->errorCorrection('H')->generate($verifyUrl));
         
-        $logoPath = public_path('uploads/img/logo-pln.png');
+        $logoPath = public_path('uploads/img/logo-plnIP.png');
         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : "";
 
         $pdf = Pdf::loadView('user.rekap_pdf', compact(
@@ -382,12 +400,10 @@ class UserController extends Controller
 
         $fileName = "Rekap_Absensi_{$internship->user->name}.pdf";
 
-        // Simpan arsip di server
         $pdfContent = $pdf->output();
         $filePath = "attendance_documents/" . date('Y/m/d') . "/" . $fileName;
         Storage::disk('local')->put($filePath, $pdfContent);
 
-        // Metadata untuk verifikasi scan QR
         try {
             $documentService = new \App\Services\AttendanceDocumentService();
             $documentService->saveDocument(

@@ -20,18 +20,20 @@ class HolidaySeeder extends Seeder
 
         foreach ($years as $year) {
             // Menggunakan API publik hari libur Indonesia
-            $response = Http::get("https://api-harilibur.vercel.app/api?year={$year}");
+            $response = Http::get("https://libur.deno.dev/api?year={$year}");
 
             if ($response->successful()) {
                 $holidays = $response->json();
 
                 foreach ($holidays as $h) {
                     // Hanya masukkan jika itu hari libur 
-                    if (isset($h['holiday_date'])) {
+                    if (isset($h['date'])) {
                         Holiday::updateOrCreate(
-                            ['holiday_date' => $h['holiday_date']],
-                            ['holiday_name' => $h['holiday_name']]
+                            ['holiday_date' => $h['date']],
+                            ['holiday_name' => $h['name']]
                         );
+                        // Debug output di terminal
+                        $this->command->info("Menambahkan libur: {$h['date']} - {$h['name']}");
                     }
                 }
             }

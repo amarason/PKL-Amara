@@ -77,7 +77,7 @@
                 <thead>
                     <tr class="bg-[#AEE2FF] text-slate-700 uppercase text-[10px] font-black tracking-widest">
                         <th class="px-6 py-5 rounded-l-2xl">Peserta</th>
-                        <th class="px-6 py-5">Instansi</th>
+                        <th class="px-6 py-5">Instansi</th> {{-- DIKEMBALIKAN KE INSTANSI --}}
                         <th class="px-6 py-5 text-center">Hadir</th>
                         <th class="px-6 py-5 text-center">Izin</th>
                         <th class="px-6 py-5 text-center text-red-500">Alpha</th>
@@ -88,17 +88,16 @@
                     @forelse($peserta as $p)
                         @php
                             $allAtt = $p->attendance;
-                            // Hitung yang absennya lengkap (Check In bukan 00:00:00)
                             $h_lengkap = $allAtt->where('status', 'hadir')->where('check_in_time', '!=', '00:00:00')->count();
-                            // Hitung yang lupa absen masuk (Check In adalah 00:00:00)
                             $h_lupa = $allAtt->where('status', 'hadir')->where('check_in_time', '==', '00:00:00')->count();
                             $izin = $allAtt->where('status', 'izin')->count();
 
+                            // PANGGIL FUNGSI YANG SUDAH DIPERBAIKI (LOOPING MANUAL)
                             $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
                             
-                            // Poin Hadir = (Lengkap * 1) + (Lupa Masuk * 0.5)
                             $poinKehadiran = $h_lengkap + ($h_lupa * 0.5);
-                        
+                            
+                            // Alpha otomatis berkurang jika $totalSeharusnya berkurang karena libur
                             $alpha = max(0, $totalSeharusnya - ($h_lengkap + $h_lupa + $izin));
                             $persentase = $totalSeharusnya > 0 ? min(100, round(($poinKehadiran / $totalSeharusnya) * 100)) : 0;
                         @endphp
@@ -108,15 +107,18 @@
                                 <p class="font-bold text-slate-800 text-sm leading-none">{{ $p->user->name }}</p>
                                 <p class="text-[10px] text-blue-500 font-black tracking-tighter mt-1">{{ $p->user->login_id }}</p>
                             </td>
+                            
+                            {{-- KOLOM INSTANSI (DIKEMBALIKAN) --}}
                             <td class="px-6 py-5">
                                 <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase italic">
                                     {{ $p->institution->institution_name }}
                                 </span>
                             </td>
+
                             <td class="px-6 py-5 text-center font-black text-green-500 text-sm">
                                 {{ $h_lengkap + $h_lupa }}
                                 @if($h_lupa > 0)
-                                    <span class="block text-[8px] text-amber-500 font-bold">({{ $h_lupa }} Lupa Masuk)</span>
+                                    <span class="block text-[8px] text-amber-500 font-bold">({{ $h_lupa }} Lupa)</span>
                                 @endif
                             </td>
                             <td class="px-6 py-5 text-center font-black text-blue-500 text-sm">{{ $izin }}</td>

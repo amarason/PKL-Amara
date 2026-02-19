@@ -21,77 +21,139 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        
+        /* Custom Scrollbar untuk Sidebar jika konten panjang */
+        aside::-webkit-scrollbar { width: 4px; }
+        aside::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 4px; }
     </style>
 </head>
 
 <body class="min-h-screen">
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-100 transform -translate-x-full sidebar-transition md:translate-x-0 md:flex md:flex-col">
-        <div class="p-7 flex items-center space-x-3">
-            <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain">
-            <span class="text-[#3B82F6] text-2xl font-extrabold tracking-tight uppercase">SIPRAKER</span>
+    {{-- SIDEBAR --}}
+    {{-- Ubah border-r menjadi shadow-xl untuk kesan melayang (modern) --}}
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl shadow-blue-900/5 transform -translate-x-full sidebar-transition md:translate-x-0 md:flex md:flex-col">
+        
+        {{-- Header Sidebar: Tambah gradient halus --}}
+        <div class="p-7 flex items-center space-x-3 bg-gradient-to-b from-blue-50/50 to-transparent">
+            <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain drop-shadow-sm">
+            <div>
+                <span class="block text-[#3B82F6] text-2xl font-extrabold tracking-tight uppercase leading-none">SIPRAKER</span>
+                <span class="text-[10px] text-slate-400 font-medium tracking-wider">Admin Panel</span>
+            </div>
         </div>
 
-        <nav class="flex-grow px-4 space-y-2">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('admin/dashboard') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
-                <i class="bi bi-grid-fill mr-4"></i> Dashboard
+        {{-- Navigasi --}}
+        <nav class="flex-grow px-4 space-y-2 mt-2">
+            
+            {{-- ITEM: DASHBOARD --}}
+            <a href="{{ route('admin.dashboard') }}" 
+               class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
+               {{ Request::is('admin/dashboard') 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
+                <i class="bi bi-grid-fill mr-4 text-lg {{ Request::is('admin/dashboard') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <span class="font-medium">Dashboard</span>
             </a>
-            <a href="{{ route('admin.peserta.create') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('admin/peserta/create') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
-                <i class="bi bi-person-plus-fill mr-4"></i> Tambah Peserta
+
+            {{-- ITEM: TAMBAH PESERTA --}}
+            <a href="{{ route('admin.peserta.create') }}" 
+               class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
+               {{ Request::is('admin/peserta/create') 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
+                <i class="bi bi-person-plus-fill mr-4 text-lg {{ Request::is('admin/peserta/create') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <span class="font-medium">Tambah Peserta</span>
             </a>
-            <a href="{{ route('admin.peserta.index') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('admin/peserta') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
-                <i class="bi bi-people-fill mr-4"></i> Manajemen Peserta
+
+            {{-- ITEM: MANAJEMEN PESERTA --}}
+            <a href="{{ route('admin.peserta.index') }}" 
+               class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
+               {{ Request::is('admin/peserta') || Request::is('admin/peserta/*') && !Request::is('admin/peserta/create')
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
+                <i class="bi bi-people-fill mr-4 text-lg {{ Request::is('admin/peserta*') && !Request::is('admin/peserta/create') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <span class="font-medium">Manajemen Peserta</span>
             </a>
-            <a href="{{ route('admin.absensi.index') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('admin/absensi*') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
-                <i class="bi bi-calendar3 mr-4"></i> Absensi Harian
+
+            {{-- ITEM: ABSENSI HARIAN --}}
+            <a href="{{ route('admin.absensi.index') }}" 
+               class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
+               {{ Request::is('admin/absensi*') 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
+                <i class="bi bi-calendar3 mr-4 text-lg {{ Request::is('admin/absensi*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <span class="font-medium">Absensi Harian</span>
             </a>
-            <a href="{{ route('admin.rekap.index') }}" class="flex items-center px-6 py-4 rounded-2xl transition-all duration-200 {{ Request::is('admin/rekap*') ? 'text-blue-500 font-bold bg-blue-50 shadow-sm' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-50' }}">
-                <i class="bi bi-file-earmark-text-fill mr-4"></i> Rekap Laporan
+
+            {{-- ITEM: REKAP LAPORAN --}}
+            <a href="{{ route('admin.rekap.index') }}" 
+               class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
+               {{ Request::is('admin/rekap*') 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
+                <i class="bi bi-file-earmark-text-fill mr-4 text-lg {{ Request::is('admin/rekap*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <span class="font-medium">Rekap Laporan</span>
             </a>
+
         </nav>
         
-        <div class="p-6 border-t border-slate-50">
-            <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest text-center">PLN IP UBP Semarang</p>
+        {{-- Footer Sidebar: Tambahkan background pattern tipis atau warna solid --}}
+        <div class="p-6 mt-auto">
+            <div class="bg-blue-50 rounded-2xl p-4 text-center border border-blue-100">
+                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">PLN IP UBP Semarang</p>
+                <p class="text-[9px] text-slate-400">© {{ date('Y') }} SIPRAKER</p>
+            </div>
         </div>
     </aside>
 
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
     <div class="flex flex-col min-h-screen md:ml-72">
-        <header class="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-12 sticky top-0 z-20">
-            <button class="md:hidden text-slate-600 text-2xl" onclick="toggleSidebar()">
+        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 md:px-12 sticky top-0 z-20 transition-all duration-300">
+            <button class="md:hidden text-slate-600 text-2xl hover:text-blue-600 transition" onclick="toggleSidebar()">
                 <i class="bi bi-list"></i>
             </button>
 
-            <div></div> 
+            <div>
+                {{-- Breadcrumb simpel atau judul halaman bisa ditaruh sini --}}
+                <h1 class="hidden md:block text-lg font-bold text-slate-700">
+                    @if(Request::is('admin/dashboard')) Dashboard Overview
+                    @elseif(Request::is('admin/peserta/create')) Tambah Peserta Baru
+                    @elseif(Request::is('admin/peserta*')) Data Peserta
+                    @elseif(Request::is('admin/absensi*')) Monitoring Absensi
+                    @elseif(Request::is('admin/rekap*')) Laporan & Rekap
+                    @endif
+                </h1>
+            </div> 
 
             <div class="flex items-center space-x-6">
                 <div class="relative">
-                    <a href="{{ route('admin.absensi.index') }}" class="block p-2 rounded-xl hover:bg-slate-50 transition-all">
-                        <i class="bi bi-bell text-slate-400 text-xl cursor-pointer hover:text-blue-500 transition-colors"></i>
-                        <div id="notif-badge" class="hidden absolute top-1 right-1 w-5 h-5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center pulse-badge">
-                            <span class="text-[9px] text-white font-black" id="notif-count">0</span>
+                    <a href="{{ route('admin.absensi.index') }}" class="block p-2 rounded-xl hover:bg-blue-50 transition-all group">
+                        <i class="bi bi-bell-fill text-slate-300 text-xl cursor-pointer group-hover:text-blue-500 transition-colors"></i>
+                        <div id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center pulse-badge">
+                            <span class="text-[8px] text-white font-black" id="notif-count">0</span>
                         </div>
                     </a>
                 </div>
 
                 <div class="flex items-center border-l pl-6 border-slate-100 space-x-4">
                     <div class="text-right hidden sm:block">
-                        <p class="text-sm font-bold text-slate-600">{{ Auth::user()->name }}</p>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Administrator</p>
+                        <p class="text-sm font-bold text-slate-700">{{ Auth::user()->name }}</p>
+                        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Administrator</p>
                     </div>
 
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm group">
-                            <i class="bi bi-box-arrow-right group-hover:scale-110 transition-transform"></i>
+                        <button type="submit" class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm group border border-red-100">
+                            <i class="bi bi-box-arrow-right group-hover:translate-x-0.5 transition-transform"></i>
                         </button>
                     </form>
                 </div>
             </div>
         </header>
 
-        <main class="flex-grow p-4 sm:p-6 md:p-12">
+        <main class="flex-grow p-4 sm:p-6 md:p-8 lg:p-12">
             @yield('content')
         </main>
     </div>
@@ -108,14 +170,14 @@
         @if(session('success'))
             Swal.fire({
                 icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}",
-                timer: 3000, showConfirmButton: false, customClass: { popup: 'rounded-[2rem]' }
+                showConfirmButton: true, confirmButtonColor: '#3B82F6', confirmButtonText: 'Oke', customClass: { popup: 'rounded-[2rem]' }
             });
         @endif
 
         @if(session('error'))
             Swal.fire({
                 icon: 'error', title: 'Gagal!', text: "{{ session('error') }}",
-                customClass: { popup: 'rounded-[2rem]' }
+                showConfirmButton: true, confirmButtonColor: '#EF4444', confirmButtonText: 'Tutup', customClass: { popup: 'rounded-[2rem]' }
             });
         @endif
 
@@ -138,13 +200,15 @@
                         if (data.count > lastCount) {
                             Swal.fire({
                                 title: 'Izin Masuk!',
-                                text: `Ada ${data.count} permohonan izin yang menunggu persetujuan.`,
+                                text: `Ada ${data.count} permohonan izin baru.`,
                                 icon: 'info',
                                 toast: true,
                                 position: 'top-end',
                                 showConfirmButton: false,
                                 timer: 5000,
-                                timerProgressBar: true
+                                timerProgressBar: true,
+                                background: '#EFF6FF',
+                                color: '#1E40AF'
                             });
                         }
                     } else {

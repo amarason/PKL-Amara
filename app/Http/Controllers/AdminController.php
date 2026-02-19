@@ -106,8 +106,10 @@ class AdminController extends Controller
     }
 
     // --- 1. Dashboard ---
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->get('search');
+
         $totalPeserta = Internship::count();
         $pesertaAktif = Internship::where('status', 'aktif')->count();
         $hariIni = Carbon::now()->toDateString();
@@ -120,10 +122,16 @@ class AdminController extends Controller
             ->where('status', 'izin')
             ->count();
 
-        $kehadiran = Attendance::with(['internship.user'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $query = Attendance::with(['internship.user']);
+
+        if ($search) {
+            $query->whereHas('internship.user', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('login_id', 'like', "%{$search}%"); // Cari berdasarkan Nama atau ID (IP26/...)
+            });
+        }
+
+        $kehadiran = $query->latest()->take(5)->get();
 
         return view('admin.dashboard', compact(
             'totalPeserta', 'pesertaAktif', 'hadirHariIni', 'izinHariIni', 'kehadiran'
@@ -472,16 +480,18 @@ class AdminController extends Controller
 
         // Hitung Ringkasan Statistik
         $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
+        
         foreach($peserta as $p) {
             $hCount = $p->attendance->where('status', 'hadir')->count();
             $iCount = $p->attendance->where('status', 'izin')->count();
             
+            // Panggil fungsi model yang SUDAH DIPERBAIKI (Loop Manual)
             $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
             
             $globalStats['hadir'] += $hCount;
             $globalStats['izin'] += $iCount;
             
-            // Alpha = selisih: Total Seharusnya - (Hadir + Izin)
+            // Alpha hanya dihitung jika Total Seharusnya > (Hadir + Izin)
             $globalStats['alpha'] += max(0, $totalSeharusnya - ($hCount + $iCount));
         }
 
