@@ -30,7 +30,7 @@
             <img src="{{ asset('uploads/img/logo-plnIP.png') }}" alt="Logo PLN" class="w-[75px] h-auto object-contain drop-shadow-sm">
             <div>
                 <span class="block text-[#3B82F6] text-2xl font-extrabold tracking-tight uppercase leading-none">SIPRAKER</span>
-                <span class="text-[10px] text-slate-400 font-medium tracking-wider">Peserta Magang</span>
+                {{-- <span class="text-[10px] text-slate-400 font-medium tracking-wider">Peserta Magang</span> --}}
             </div>
         </div>
 
