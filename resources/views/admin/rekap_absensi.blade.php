@@ -9,7 +9,8 @@
 
     {{-- Filter Panel --}}
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-        <form action="{{ route('admin.rekap.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {{-- Ubah md:grid-cols-4 menjadi md:grid-cols-5 agar muat kolom baru --}}
+        <form action="{{ route('admin.rekap.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Cari Peserta</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Nama / ID..." 
@@ -25,6 +26,16 @@
                             {{ $inst->institution_name }}
                         </option>
                     @endforeach
+                </select>
+            </div>
+
+            {{-- FILTER STATUS BARU --}}
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Status Peserta</label>
+                <select name="status" class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4 appearance-none">
+                    <option value="all" {{ ($status ?? 'all') == 'all' ? 'selected' : '' }}>Semua Status</option>
+                    <option value="aktif" {{ ($status ?? 'all') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                    <option value="selesai" {{ ($status ?? 'all') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                 </select>
             </div>
 
@@ -53,7 +64,7 @@
                     Filter
                 </button>
 
-                @if(request('search') || request('institution_id') || request('bulan') != date('m') || request('tahun') != date('Y'))
+                @if(request('search') || request('institution_id') || request('status') || request('bulan') != date('m') || request('tahun') != date('Y'))
                     <a href="{{ route('admin.rekap.index') }}" 
                     class="bg-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-300 transition-all shadow-sm flex items-center justify-center"
                     title="Bersihkan Filter">
@@ -77,7 +88,8 @@
                 <thead>
                     <tr class="bg-[#AEE2FF] text-slate-700 uppercase text-[10px] font-black tracking-widest">
                         <th class="px-6 py-5 rounded-l-2xl">Peserta</th>
-                        <th class="px-6 py-5">Instansi</th> {{-- DIKEMBALIKAN KE INSTANSI --}}
+                        <th class="px-6 py-5 text-center">Status</th> {{-- KOLOM STATUS --}}
+                        <th class="px-6 py-5">Instansi</th>
                         <th class="px-6 py-5 text-center">Hadir</th>
                         <th class="px-6 py-5 text-center">Izin</th>
                         <th class="px-6 py-5 text-center text-red-500">Alpha</th>
@@ -92,12 +104,10 @@
                             $h_lupa = $allAtt->where('status', 'hadir')->where('check_in_time', '==', '00:00:00')->count();
                             $izin = $allAtt->where('status', 'izin')->count();
 
-                            // PANGGIL FUNGSI YANG SUDAH DIPERBAIKI (LOOPING MANUAL)
                             $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
                             
                             $poinKehadiran = $h_lengkap + ($h_lupa * 0.5);
                             
-                            // Alpha otomatis berkurang jika $totalSeharusnya berkurang karena libur
                             $alpha = max(0, $totalSeharusnya - ($h_lengkap + $h_lupa + $izin));
                             $persentase = $totalSeharusnya > 0 ? min(100, round(($poinKehadiran / $totalSeharusnya) * 100)) : 0;
                         @endphp
@@ -107,8 +117,16 @@
                                 <p class="font-bold text-slate-800 text-sm leading-none">{{ $p->user->name }}</p>
                                 <p class="text-[10px] text-blue-500 font-black tracking-tighter mt-1">{{ $p->user->login_id }}</p>
                             </td>
+
+                            {{-- TAMPILAN STATUS PESERTA --}}
+                            <td class="px-6 py-5 text-center">
+                                @if($p->status == 'aktif')
+                                    <span class="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">Aktif</span>
+                                @else
+                                    <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">Selesai</span>
+                                @endif
+                            </td>
                             
-                            {{-- KOLOM INSTANSI (DIKEMBALIKAN) --}}
                             <td class="px-6 py-5">
                                 <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase italic">
                                     {{ $p->institution->institution_name }}
@@ -138,7 +156,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-20 text-center text-slate-300 italic font-bold">Data tidak ditemukan.</td>
+                            <td colspan="7" class="px-6 py-20 text-center text-slate-300 italic font-bold">Data tidak ditemukan.</td>
                         </tr>
                     @endforelse
                 </tbody>

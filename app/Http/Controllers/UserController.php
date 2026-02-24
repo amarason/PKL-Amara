@@ -375,8 +375,7 @@ class UserController extends Controller
             }
         }
 
-        // Urutkan dari tanggal terbaru
-        $attendances = $attendances->sortByDesc('attendance_date');
+        $attendances = $attendances->sortBy('attendance_date')->values();
 
         // 4. Statistik akhir
         $stats = [

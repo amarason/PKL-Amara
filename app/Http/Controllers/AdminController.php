@@ -436,6 +436,7 @@ class AdminController extends Controller
         $tahun = $request->get('tahun', date('Y'));
         $search = $request->get('search');
         $institution_id = $request->get('institution_id');
+        $status = $request->get('status', 'all'); 
 
         $query = Internship::with(['user', 'institution', 'attendance' => function($query) use ($bulan, $tahun) {
             if ($bulan && $bulan !== 'all') $query->whereMonth('attendance_date', $bulan);
@@ -447,12 +448,19 @@ class AdminController extends Controller
                 $q->where('name', 'like', "%{$search}%")->orWhere('login_id', 'like', "%{$search}%");
             });
         }
-        if ($institution_id) $query->where('institution_id', $institution_id);
+        if ($institution_id) {
+            $query->where('institution_id', $institution_id);
+        }
+        
+        // Logika filter status
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
 
-        $peserta = $query->where('status', 'aktif')->get();
+        $peserta = $query->get(); 
         $institutions = Institution::all();
 
-        return view('admin.rekap_absensi', compact('peserta', 'bulan', 'tahun', 'institutions'));
+        return view('admin.rekap_absensi', compact('peserta', 'bulan', 'tahun', 'institutions', 'status'));
     }
 
     public function exportRekapPdf(Request $request)
@@ -461,6 +469,7 @@ class AdminController extends Controller
         $tahun = $request->get('tahun', date('Y'));
         $institution_id = $request->get('institution_id');
         $search = $request->get('search'); 
+        $status = $request->get('status', 'all'); 
 
         $query = Internship::with(['user', 'institution', 'attendance' => function($q) use ($bulan, $tahun) {
             if ($bulan && $bulan !== 'all') $q->whereMonth('attendance_date', $bulan);
@@ -475,8 +484,13 @@ class AdminController extends Controller
                 ->orWhere('login_id', 'like', "%{$search}%");
             });
         }
+        
+        // Logika filter status
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
 
-        $peserta = $query->where('status', 'aktif')->get();
+        $peserta = $query->get();
 
         // Hitung Ringkasan Statistik
         $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
@@ -484,8 +498,7 @@ class AdminController extends Controller
         foreach($peserta as $p) {
             $hCount = $p->attendance->where('status', 'hadir')->count();
             $iCount = $p->attendance->where('status', 'izin')->count();
-            
-            // Panggil fungsi model yang SUDAH DIPERBAIKI (Loop Manual)
+        
             $totalSeharusnya = $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun);
             
             $globalStats['hadir'] += $hCount;

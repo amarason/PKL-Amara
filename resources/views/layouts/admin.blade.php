@@ -49,56 +49,56 @@
             {{-- ITEM: DASHBOARD --}}
             <a href="{{ route('admin.dashboard') }}" 
                class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
-               {{ Request::is('admin/dashboard') 
+               {{ request()->routeIs('admin.dashboard') 
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
-                <i class="bi bi-grid-fill mr-4 text-lg {{ Request::is('admin/dashboard') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <i class="bi bi-grid-fill mr-4 text-lg {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
 
             {{-- ITEM: TAMBAH PESERTA --}}
             <a href="{{ route('admin.peserta.create') }}" 
                class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
-               {{ Request::is('admin/peserta/create') 
+               {{ request()->routeIs('admin.peserta.create') 
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
-                <i class="bi bi-person-plus-fill mr-4 text-lg {{ Request::is('admin/peserta/create') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <i class="bi bi-person-plus-fill mr-4 text-lg {{ request()->routeIs('admin.peserta.create') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
                 <span class="font-medium">Tambah Peserta</span>
             </a>
 
             {{-- ITEM: MANAJEMEN PESERTA --}}
             <a href="{{ route('admin.peserta.index') }}" 
                class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
-               {{ Request::is('admin/peserta') || Request::is('admin/peserta/*') && !Request::is('admin/peserta/create')
+               {{ request()->routeIs('admin.peserta.index', 'admin.peserta.edit') 
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
-                <i class="bi bi-people-fill mr-4 text-lg {{ Request::is('admin/peserta*') && !Request::is('admin/peserta/create') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <i class="bi bi-people-fill mr-4 text-lg {{ request()->routeIs('admin.peserta.index', 'admin.peserta.edit') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
                 <span class="font-medium">Manajemen Peserta</span>
             </a>
 
             {{-- ITEM: ABSENSI HARIAN --}}
             <a href="{{ route('admin.absensi.index') }}" 
                class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
-               {{ Request::is('admin/absensi*') 
+               {{ request()->routeIs('admin.absensi.*') 
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
-                <i class="bi bi-calendar3 mr-4 text-lg {{ Request::is('admin/absensi*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <i class="bi bi-calendar3 mr-4 text-lg {{ request()->routeIs('admin.absensi.*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
                 <span class="font-medium">Absensi Harian</span>
             </a>
 
             {{-- ITEM: REKAP LAPORAN --}}
             <a href="{{ route('admin.rekap.index') }}" 
                class="flex items-center px-6 py-4 rounded-2xl transition-all duration-300 group
-               {{ Request::is('admin/rekap*') 
+               {{ request()->routeIs('admin.rekap.*') 
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 translate-x-1' 
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1' }}">
-                <i class="bi bi-file-earmark-text-fill mr-4 text-lg {{ Request::is('admin/rekap*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
+                <i class="bi bi-file-earmark-text-fill mr-4 text-lg {{ request()->routeIs('admin.rekap.*') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500' }}"></i>
                 <span class="font-medium">Rekap Laporan</span>
             </a>
 
         </nav>
         
-        {{-- Footer Sidebar: Tambahkan background pattern tipis atau warna solid --}}
+        {{-- Footer Sidebar --}}
         <div class="p-6 mt-auto">
             <div class="bg-blue-50 rounded-2xl p-4 text-center border border-blue-100">
                 <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">PLN IP UBP Semarang</p>
@@ -118,14 +118,14 @@
             <div>
                 {{-- Breadcrumb simpel atau judul halaman bisa ditaruh sini --}}
                 <h1 class="hidden md:block text-lg font-bold text-slate-700">
-                    @if(Request::is('admin/dashboard')) Dashboard Overview
-                    @elseif(Request::is('admin/peserta/create')) Tambah Peserta Baru
-                    @elseif(Request::is('admin/peserta*')) Data Peserta
-                    @elseif(Request::is('admin/absensi*')) Monitoring Absensi
-                    @elseif(Request::is('admin/rekap*')) Laporan & Rekap
+                    @if(request()->routeIs('admin.dashboard')) Dashboard Overview
+                    @elseif(request()->routeIs('admin.peserta.create')) Tambah Peserta Baru
+                    @elseif(request()->routeIs('admin.peserta.*')) Data Peserta
+                    @elseif(request()->routeIs('admin.absensi.*')) Monitoring Absensi
+                    @elseif(request()->routeIs('admin.rekap.*')) Laporan & Rekap
                     @endif
                 </h1>
-            </div> 
+            </div>
 
             <div class="flex items-center space-x-6">
                 <div class="relative">
