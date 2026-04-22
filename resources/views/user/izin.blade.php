@@ -29,9 +29,19 @@
 
                     <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lampiran (Opsional)</label>
-                        <input type="file" name="document" id="document_input" 
+                        
+                        {{-- Atribut accept=".pdf,.jpg,.jpeg,.png" --}}
+                        <input type="file" name="document" id="document_input" accept=".pdf,.jpg,.jpeg,.png"
                             class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition">
-                        <p class="text-[9px] text-slate-400 mt-1">*Format: PDF, JPG, PNG (Maks 2MB)</p>
+                        
+                        {{-- Teks Format--}}
+                        <p id="file_help_text" class="text-[9px] text-slate-400 mt-1 transition-all">
+                            *Format: PDF, JPG, PNG (Maks 2MB)
+                        </p>
+                        
+                        {{-- Teks Peringatan Error --}}
+                        <p id="file_error_text" class="text-[10px] text-red-500 font-bold mt-1 hidden transition-all">
+                        </p>
                     </div>
 
                     <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95">
@@ -144,23 +154,42 @@
     }
 
     /**
-     * 2. Pengecekan Ukuran File
+     * 2. Pengecekan Format dan Ukuran File (Tanpa Alert)
      */
     const docInput = document.getElementById('document_input');
+    const fileHelpText = document.getElementById('file_help_text');
+    const fileErrorText = document.getElementById('file_error_text');
+
     if (docInput) {
         docInput.addEventListener('change', function() {
             const file = this.files[0];
-            const maxSize = 2 * 1024 * 1024; 
+            const maxSize = 2 * 1024 * 1024; // 2 MB
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 
-            if (file && file.size > maxSize) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'File Terlalu Besar',
-                    text: 'Ukuran file ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB melebihi batas maksimal 2MB.',
-                    confirmButtonColor: '#3b82f6',
-                    customClass: { popup: 'rounded-[2rem]' }
-                });
-                this.value = ''; // Mengosongkan input file kembali
+            if (file) {
+                // Cek Format File
+                if (!allowedTypes.includes(file.type)) {
+                    fileErrorText.innerText = '*Peringatan: Format file harus berupa PDF, JPG, atau PNG!';
+                    fileErrorText.classList.remove('hidden');
+                    fileHelpText.classList.add('hidden');
+                    this.value = ''; // Kosongkan input otomatis
+                } 
+                // Cek Ukuran File
+                else if (file.size > maxSize) {
+                    fileErrorText.innerText = '*Peringatan: Ukuran file melebihi batas maksimal 2MB!';
+                    fileErrorText.classList.remove('hidden');
+                    fileHelpText.classList.add('hidden');
+                    this.value = ''; // Kosongkan input otomatis
+                } 
+                // Jika Valid
+                else {
+                    fileErrorText.classList.add('hidden');
+                    fileHelpText.classList.remove('hidden');
+                }
+            } else {
+                // Jika user batal memilih file
+                fileErrorText.classList.add('hidden');
+                fileHelpText.classList.remove('hidden');
             }
         });
     }
