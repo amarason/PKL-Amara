@@ -85,6 +85,20 @@ Perintah ini otomatis membuat tabel, akun admin utama, dan menyinkronkan libur n
 ### Perizinan Folder (Permissions)
 Pastikan web server memiliki izin tulis (write permission) pada folder /storage dan /bootstrap/cache.
 
+## Pengelolaan Akun Admin (Khusus Tim IT)
+Karena Dashboard Admin hanya difokuskan pada pengelolaan Peserta PKL, penambahan akun Admin baru dapat dilakukan melalui terminal server menggunakan Laravel Tinker:
+- Buka terminal di folder proyek, jalankan perintah: `php artisan tinker`
+Masukkan kode berikut (sesuaikan nama, username, dan password):
+```bash
+App\Models\User::create([
+    'name' => 'Nama Admin Baru',
+    'login_id' => 'admin_username',
+    'password' => bcrypt('password_anda'),
+    'role' => 'ROLE_ADMIN'
+]);
+```
+Tekan Enter. Akun baru kini dapat digunakan untuk login ke sistem.
+
 ## 💻 Panduan Pengembangan (Local Development)
 Gunakan langkah ini jika ingin mengembangkan fitur baru di laptop lokal.
 
