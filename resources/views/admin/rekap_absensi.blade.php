@@ -9,7 +9,6 @@
 
     {{-- Filter Panel --}}
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-        {{-- Ubah md:grid-cols-4 menjadi md:grid-cols-5 agar muat kolom baru --}}
         <form action="{{ route('admin.rekap.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Cari Peserta</label>
@@ -29,7 +28,6 @@
                 </select>
             </div>
 
-            {{-- FILTER STATUS BARU --}}
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Status Peserta</label>
                 <select name="status" class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4 appearance-none">
@@ -88,7 +86,7 @@
                 <thead>
                     <tr class="bg-[#AEE2FF] text-slate-700 uppercase text-[10px] font-black tracking-widest">
                         <th class="px-6 py-5 rounded-l-2xl">Peserta</th>
-                        <th class="px-6 py-5 text-center">Status</th> {{-- KOLOM STATUS --}}
+                        <th class="px-6 py-5 text-center">Status</th>
                         <th class="px-6 py-5">Instansi</th>
                         <th class="px-6 py-5 text-center">Hadir</th>
                         <th class="px-6 py-5 text-center">Izin</th>
@@ -118,7 +116,6 @@
                                 <p class="text-[10px] text-blue-500 font-black tracking-tighter mt-1">{{ $p->user->login_id }}</p>
                             </td>
 
-                            {{-- TAMPILAN STATUS PESERTA --}}
                             <td class="px-6 py-5 text-center">
                                 @if($p->status == 'aktif')
                                     <span class="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">Aktif</span>
@@ -155,8 +152,15 @@
                             </td>
                         </tr>
                     @empty
+                        {{-- PESAN KOSONG YANG SUDAH DIPERBARUI --}}
                         <tr>
-                            <td colspan="7" class="px-6 py-20 text-center text-slate-300 italic font-bold">Data tidak ditemukan.</td>
+                            <td colspan="7" class="px-6 py-20 text-center text-slate-300 italic font-bold">
+                                @if($bulan != 'all')
+                                    Tidak ada peserta yang aktif pada bulan {{ \Carbon\Carbon::create()->month((int)$bulan)->translatedFormat('F') }} {{ $tahun }}.
+                                @else
+                                    Data tidak ditemukan.
+                                @endif
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

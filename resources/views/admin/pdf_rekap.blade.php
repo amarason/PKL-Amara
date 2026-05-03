@@ -52,7 +52,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($peserta as $index => $p)
+                @forelse($peserta as $index => $p)
                     @php
                         // Hitung kehadiran lengkap (bukan 00:00:00)
                         $h_full = $p->attendance->where('status', 'hadir')->where('check_in_time', '!=', '00:00:00')->count();
@@ -82,7 +82,17 @@
                         <td class="text-alpha">{{ $a }}</td>
                         <td style="font-weight: bold;">{{ $persen }}%</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px 10px; font-style: italic; color: #64748b; font-weight: bold;">
+                            @if($bulan != 'all')
+                                Tidak ada peserta yang aktif pada bulan {{ $namaBulan }} {{ $tahun }}.
+                            @else
+                                Data tidak ditemukan.
+                            @endif
+                        </td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
 

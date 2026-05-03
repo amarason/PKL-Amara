@@ -6,15 +6,15 @@
 
 ---
 
-## 📋 Ikhtisar
+## 📋 RINGKASAN
 
-**SIPRAKER** adalah sistem manajemen presensi dan absensi berbasis web untuk program Praktik Kerja Lapangan (PKL).
+**SIPRAKER** adalah sistem manajemen presensi dan absensi berbasis web untuk program Praktik Kerja Lapangan (PKL) di PT PLN Indonesia Power UBP Semarang. Sistem ini memiliki fitur absensi lokasi, pengelolaan data peserta, dan pembuatan laporan PDF otomatis dengan verifikasi QR Code terenkripsi.
 
 ---
 
 ## 🔧 Tech Stack
 
-Tabel ini merangkum spesifikasi teknis dan versi perangkat lunak yang digunakan dalam pengembangan sistem **SIPRAKER**.
+Tabel ini merangkum spesifikasi teknis dan versi perangkat lunak yang digunakan dalam pengembangan sistem SIPRAKER.
 
 | Komponen | Teknologi | Versi |
 | :--- | :--- | :--- |
@@ -31,168 +31,100 @@ Tabel ini merangkum spesifikasi teknis dan versi perangkat lunak yang digunakan 
 **Konfigurasi Sistem**:
 *   **Timezone**: Asia/Jakarta (WIB).
 *   **Locale**: id (Bahasa Indonesia).
-*   **Debug Mode**: Enabled (Lingkungan Pengembangan).
-*   **Storage**: Linked (`public/storage` sudah terhubung).
+*   **Storage**: Linked (`public/storage`).
 
 ---
 
 ## 📂 Struktur Proyek
-
-```
+```text
 AbsensiPKL/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── AuthController.php         # Authentication logic
-│   │   │   ├── AdminController.php        # Admin dashboard & management
-│   │   │   └── UserController.php         # User settings
-│   │   └── Middleware/
-│   ├── Models/
-│   │   ├── User.php                       # User model
-│   │   ├── Attendance.php                 # Attendance records
-│   │   ├── LeaveRequest.php               # Leave requests
-│   │   ├── Internship.php                 # Internship data
-│   │   └── ...
-│   └── Services/
-│       ├── AttendanceDocumentService.php  # Document handling
-│       └── IdGeneratorService.php         # ID generation
+│   │   ├── Controllers/       # Logika utama (Admin, Peserta, Absensi)
+│   │   └── Middleware/        # Filter akses (Role Admin/Peserta)
+│   ├── Models/                # Struktur data (User, Attendance, Internship, dll)
+│   └── Services/              # Logika khusus (Generate ID, Dokumen PDF)
 ├── resources/
-│   ├── views/                             # Blade templates
-│   ├── css/                               # Tailwind CSS
-│   └── js/                                # JavaScript assets
+│   ├── views/                 # Tampilan antarmuka (Blade + Tailwind)
+│   └── css/                   # Konfigurasi CSS Tailwind
 ├── routes/
-│   ├── web.php                            # Web routes
-│   └── console.php                        # Console commands
+│   └── web.php                # Rute URL aplikasi
 ├── database/
-│   ├── migrations/                        # Database migrations
-│   └── seeders/                           # Database seeders
+│   ├── migrations/            # Skema tabel database
+│   └── seeders/               # Data awal (Admin default, Hari Libur Nasional)
 ├── config/
-│   ├── app.php                            # App configuration
-│   ├── auth.php                           # Auth configuration
-│   └── database.php                       # Database configuration
-├── tests/                                 # Test cases
-├── composer.json                          # PHP dependencies
-├── package.json                           # Node.js dependencies
-├── DEPLOYMENT.md                          # Deployment guide
-└── DATABASE.md                            # Database schema documentation
-```
+│   └── qrcode.php             # Konfigurasi khusus QR Code & IP Lokal
+└── public/
+    └── uploads/               # Aset gambar dan logo
 
 ---
 
-## 🚀 Quick Start (Development)
+```
+## Panduan Instalasi (Untuk Tim IT Server Produksi)
+Ikuti langkah berikut untuk memasang aplikasi SIPRAKER di server resmi perusahaan.
 
-### Prasyarat
-- PHP 8.2+
-- Composer
-- Node.js 16+
-- MySQL 5.7+
+### Persiapan File
+- Ekstrak file zip SIPRAKER ke dalam folder web server (contoh: htdocs atau /var/www/html). Buka terminal dan arahkan ke folder tersebut.
+### Instal Dependensi: `composer instal --optimize-autoloader --no-dev`
+### Setup Environment
+Salin file .env.example menjadi .env.
+`cp .env.example .env`
+Sesuaikan koneksi database di dalam file .env:
+Code snippet
+DB_DATABASE=nama_database_anda
+DB_USERNAME=user_database_anda
+DB_PASSWORD=password_database_anda
 
-### Instalasi
+(Penting: Biarkan konfigurasi QR_LOCAL_IP di baris paling bawah tetap kosong agar sistem otomatis menggunakan nama domain server).
+### Generate Key & Storage Link
+`php artisan key:generate`
+`php artisan storage:link`
+### Migrasi Database & Isi Data Awal
+Perintah ini otomatis membuat tabel, akun admin utama, dan menyinkronkan libur nasional.
+`php artisan migrate:fresh --seed`
+### Perizinan Folder (Permissions)
+Pastikan web server memiliki izin tulis (write permission) pada folder /storage dan /bootstrap/cache.
 
-1. **Unduh proyek**
-```bash
-# Unduh SIPRAKER.zip dari Google Drive
-# Ekstrak ke lokasi yang Anda inginkan
-unzip SIPRAKER.zip
-cd sipraker
-````
+## 💻 Panduan Pengembangan (Local Development)
+Gunakan langkah ini jika ingin mengembangkan fitur baru di laptop lokal.
 
-2. **Install dependencies**
+### Install Dependencies
 ```bash
 composer install
 npm install
 ```
-
-3. **Setup environment**
+### Setup Database & Environment
+Sesuaikan koneksi database di .env (Laragon biasanya menggunakan user root tanpa password).
+Jalankan migrasi:
+`php artisan migrate:fresh --seed`
+### Jalankan Server Lokal
 ```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-4. **Configure database** (edit `.env`)
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=sipraker_db
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-5. **Run migrations**
-```bash
-php artisan migrate
-```
-
-6. **Build assets**
-```bash
-npm run build  # or npm run dev for development
-```
-
-7. **Start development server**
-```bash
+npm run dev
 php artisan serve
 ```
+### Testing QR Code dari HP (Lokal)
+Isi IP Wi-Fi laptop Anda di file .env:
+Code snippet
 
-Access the application at `http://localhost:8000`
+QR_LOCAL_IP=192.168.1.xxx
+QR_PORT=8000
+QR_REWRITE_LOCALHOST=true
+Jalankan server dengan akses publik:
+`php artisan serve --host=0.0.0.0 --port=8000`
 
----
+🐛 Troubleshooting
+- Issue: "SQLSTATE[HY000]: General error: 1030"
+Cek sisa ruang penyimpanan (disk space) database server.
+Jalankan: `php artisan cache:clear`
+- Issue: Gambar/PDF Tidak Ditemukan (404)
+Kemungkinan tautan storage terputus. Jalankan kembali:`php artisan storage:link `
+- Issue: Hasil Scan QR Code "localhost menolak terhubung" di HP
+Pastikan HP dan laptop terhubung di Wi-Fi yang sama.
+Pastikan Anda sudah mengatur QR_LOCAL_IP di file .env dan membersihkan cache konfigurasi dengan  `php artisan config:clear `
+Gunakan PDF rekap yang baru diunduh setelah IP diatur.
+- Issue: Laporan PDF Muncul Pesan "Dokumen Tidak Dikenali"
+Hapus cache aplikasi: `php artisan cache:clear` Sistem seringkali menyimpan riwayat error scan sebelumnya selama 1 jam.
 
+Dikembangkan oleh: Amara Putri Soniaji (Universitas Diponegoro)
 
-## 🧪 Testing
-
-```bash
-# Run all tests
-php artisan test
-
-# Run specific test file
-php artisan test tests/Feature/AuthTest.php
-
-# Run with coverage
-php artisan test --coverage
-```
-
----
-
-## 📋 Common Tasks
-
-### Create Admin User
-```bash
-php artisan tinker
->>> App\Models\User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'login_id' => 'admin', 'password' => bcrypt('password'), 'role' => 'ROLE_ADMIN'])
-```
-
-### Reset Database (Development)
-```bash
-php artisan migrate:fresh --seed
-```
-
-### Generate PDF Report
-```bash
-# PDFs are generated automatically via barryvdh/laravel-dompdf
-# See controllers for usage examples
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Issue: "SQLSTATE[HY000]: General error: 1030"
-- Check database disk space
-- Run: `php artisan cache:clear`
-
-### Issue: "Class not found" errors
-- Run: `composer dump-autoload`
-- Run: `php artisan clear-compiled`
-
-### Issue: QR Code not displaying
-- Check `config/qrcode.php` is configured
-- Verify QR library installed: `composer show simplesoftwareio/simple-qrcode`
-
-### Issue: File upload fails
-- Check `storage/app` folder permissions
-- Check disk space available
-- Verify `FILESYSTEM_DISK=local` in `.env`
-
----
 

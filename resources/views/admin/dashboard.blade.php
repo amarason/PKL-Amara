@@ -3,9 +3,20 @@
 @section('content')
 
 <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-10">
-    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
-        Selamat Datang Admin
-    </h2>
+    {{-- JUDUL & TOMBOL SINKRONISASI --}}
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">
+            Selamat Datang Admin
+        </h2>
+
+        {{-- Tombol Sinkronisasi Libur --}}
+        <form action="{{ route('admin.holidays.sync') }}" method="POST" class="inline-block" onsubmit="return confirmSync(event, this)">
+            @csrf
+            <button type="submit" class="bg-red-50 text-red-500 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-100 flex items-center">
+                <i class="bi bi-calendar2-check-fill mr-2 text-sm"></i> Sinkronkan Libur Nasional
+            </button>
+        </form>
+    </div>
 
     {{-- PENCARIAN --}}
     <form action="{{ route('admin.dashboard') }}" method="GET" class="w-full md:w-auto">
@@ -147,5 +158,41 @@
     </div>
 
 </div>
+
+
+<script>
+    function confirmSync(event, form) {
+        event.preventDefault(); // Mencegah form langsung terkirim
+        
+        Swal.fire({
+            title: 'Sinkronisasi Libur?',
+            text: "Sistem akan menarik pembaruan data libur nasional dari API. Proses ini membutuhkan koneksi internet.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3B82F6',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Tarik Data!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-[2rem]'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Munculkan animasi loading karena proses tarik API butuh waktu beberapa detik
+                Swal.fire({
+                    title: 'Mohon Tunggu...',
+                    text: 'Sedang menarik data dari server.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Kirim form setelah user setuju
+                form.submit();
+            }
+        });
+    }
+</script>
 
 @endsection

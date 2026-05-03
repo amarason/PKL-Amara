@@ -459,6 +459,9 @@ class AdminController extends Controller
 
         $peserta = $query->get(); 
         $institutions = Institution::all();
+        $peserta = $peserta->filter(function($p) use ($bulan, $tahun) {
+            return $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun) > 0;
+        });
 
         return view('admin.rekap_absensi', compact('peserta', 'bulan', 'tahun', 'institutions', 'status'));
     }
@@ -491,6 +494,9 @@ class AdminController extends Controller
         }
 
         $peserta = $query->get();
+        $peserta = $peserta->filter(function($p) use ($bulan, $tahun) {
+            return $p->getTotalSeharusnyaHadir($bulan == 'all' ? null : $bulan, $tahun) > 0;
+        });
 
         // Hitung Ringkasan Statistik
         $globalStats = ['hadir' => 0, 'izin' => 0, 'alpha' => 0];
@@ -581,28 +587,55 @@ class AdminController extends Controller
             $cacheKey = 'verify_report_' . substr($hash, 0, 20);
             
             $reportData = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addHours(1), function() use ($hash) {
-                $decrypted = Crypt::decryptString($hash);
-                [$id, $bulan, $tahun] = explode('|', $decrypted);
+                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($hash);
+                $parts = explode('|', $decrypted);
+                
+                if (count($parts) === 4) {
+                    // SKENARIO 1: LAPORAN REKAP KOLEKTIF
+                    [$institution_id, $bulan, $tahun, $search] = $parts;
+                    
+                    $namaInstansi = "Semua Instansi";
+                    if ($institution_id) {
+                        $instansiQuery = \App\Models\Institution::find($institution_id);
+                        if ($instansiQuery) $namaInstansi = $instansiQuery->institution_name;
+                    }
 
-                $peserta = Internship::select(['internship_id', 'user_id', 'institution_id', 'start_date', 'end_date'])
-                    ->with(['user:id,name', 'institution:institution_id,institution_name'])
-                    ->where('internship_id', $id)
-                    ->first();
+                    // Perbaikan teks nama peserta
+                    $namaPeserta = "Seluruh Peserta Magang";
+                    if ($search) {
+                        $namaPeserta = "Hasil Pencarian: " . $search;
+                    }
 
-                if (!$peserta) {
-                    return ['error' => true, 'message' => 'Dokumen Tidak Dikenali oleh Sistem SIPRAKER.'];
+                    return [
+                        'error' => false,
+                        'nama' => $namaPeserta,
+                        'instansi' => $namaInstansi,
+                        'periode' => "Rekapitulasi Bulanan",
+                        'laporan_bulan' => $bulan === 'all' ? 'Seluruh Bulan' : \Carbon\Carbon::create()->month((int)$bulan)->translatedFormat('F'),
+                        'laporan_tahun' => $tahun,
+                        'verified_at' => now()->format('Y-m-d H:i:s')
+                    ];
+
+                } else {
+                    // SKENARIO 2: LAPORAN INDIVIDU
+                    [$id, $bulan, $tahun] = $parts;
+
+                    $peserta = \App\Models\Internship::with(['user', 'institution'])->where('internship_id', $id)->first();
+
+                    if (!$peserta) {
+                        return ['error' => true, 'message' => 'Dokumen Tidak Dikenali oleh Sistem SIPRAKER.'];
+                    }
+
+                    return [
+                        'error' => false,
+                        'nama' => $peserta->user->name,
+                        'instansi' => $peserta->institution->institution_name,
+                        'periode' => date('d M Y', strtotime($peserta->start_date)) . ' - ' . date('d M Y', strtotime($peserta->end_date)),
+                        'laporan_bulan' => \Carbon\Carbon::create()->month((int)$bulan)->translatedFormat('F'),
+                        'laporan_tahun' => $tahun,
+                        'verified_at' => now()->format('Y-m-d H:i:s')
+                    ];
                 }
-
-                return [
-                    'error' => false,
-                    'nama' => $peserta->user->name,
-                    'instansi' => $peserta->institution->institution_name,
-                    'periode_mulai' => $peserta->start_date,
-                    'periode_selesai' => $peserta->end_date,
-                    'laporan_bulan' => Carbon::create()->month($bulan)->format('F'),
-                    'laporan_tahun' => $tahun,
-                    'verified_at' => now()
-                ];
             });
 
             if ($reportData['error'] ?? false) {
@@ -610,6 +643,7 @@ class AdminController extends Controller
             }
 
             return view('public.verify_report', $reportData);
+            
         } catch (\Exception $e) {
             return "Link Verifikasi Kadaluarsa atau Tidak Valid.";
         }
@@ -647,5 +681,46 @@ class AdminController extends Controller
         ]);
         
         return response()->json(['id' => $major->major_id, 'name' => $major->major_name]);
+    }
+
+    // --- 7. Sinkronisasi Libur Nasional ---
+
+    public function syncHolidays()
+    {
+        try {
+            $tahunSekarang = date('Y');
+            // Menarik data tahun ini dan tahun depan
+            $years = [$tahunSekarang, $tahunSekarang + 1];
+            $count = 0;
+
+            foreach ($years as $year) {
+                // Proses tarik data dari API publik
+                $response = \Illuminate\Support\Facades\Http::get("https://libur.deno.dev/api?year={$year}");
+
+                if ($response->successful()) {
+                    $holidays = $response->json();
+
+                    foreach ($holidays as $h) {
+                        if (isset($h['date'])) {
+                            // Update jika tanggal sudah ada, Insert jika belum ada
+                            DB::table('holidays')->updateOrInsert(
+                                ['holiday_date' => $h['date']],
+                                ['holiday_name' => $h['name']]
+                            );
+                            $count++;
+                        }
+                    }
+                }
+            }
+
+            if ($count > 0) {
+                return back()->with('success', "Berhasil mensinkronisasi {$count} data hari libur nasional.");
+            } else {
+                return back()->with('error', 'Gagal menarik data. Server API libur mungkin sedang sibuk.');
+            }
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan sinkronisasi: ' . $e->getMessage());
+        }
     }
 }

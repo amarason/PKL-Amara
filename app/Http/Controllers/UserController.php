@@ -387,7 +387,14 @@ class UserController extends Controller
         // 5. Generate PDF & QR
         $hashData = $internship->internship_id . '|' . ($month ?? 'all') . '|' . $year;
         $encryptedHash = Crypt::encryptString($hashData);
+
         $verifyUrl = route('report.verify', ['hash' => $encryptedHash]);
+    
+        if (config('qrcode.rewrite_localhost') && config('qrcode.local_ip')) {
+            $ipDanPort = config('qrcode.local_ip') . ':' . config('qrcode.port');
+            // untuk uji coba di localhost programmer
+            $verifyUrl = str_replace(['localhost:8000', '127.0.0.1:8000', 'localhost'], $ipDanPort, $verifyUrl);
+        }
         $qrcode = base64_encode(QrCode::format('svg')->size(90)->errorCorrection('H')->generate($verifyUrl));
         
         $logoPath = public_path('uploads/img/logo-plnIP.png');

@@ -20,7 +20,7 @@ return [
     */
 
     // Masukkan IP Address lokal komputer Anda di sini
-    // Contoh: '192.168.1.5', '10.0.0.25', dll
+    // Contoh: '192.168.1.6'
     // Biarkan null untuk auto-detect
     'local_ip' => env('QR_LOCAL_IP', null),
 

@@ -1,4 +1,16 @@
-<div class="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Dokumen SIPRAKER</title>
+    {{-- Memanggil Tailwind CSS agar desain muncul --}}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-slate-50 font-sans">
+
+<div class="min-h-screen flex items-center justify-center p-6">
     <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl border-t-[10px] border-green-500 p-8 text-center">
         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
             <i class="bi bi-patch-check-fill"></i>
@@ -18,7 +30,8 @@
             </div>
             <div>
                 <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Periode Magang</p>
-                <p class="font-bold text-slate-800">{{ date('d M Y', strtotime($periode_mulai)) }} - {{ date('d M Y', strtotime($periode_selesai)) }}</p>
+                {{-- Tanggal tidak perlu diubah lagi karena sudah disiapkan dari controller --}}
+                <p class="font-bold text-slate-800">{{ $periode }}</p>
             </div>
             <div class="pt-4 border-t border-slate-200">
                 <p class="text-[10px] font-black uppercase text-green-600 tracking-widest">Status Laporan</p>
@@ -31,3 +44,6 @@
         </p>
     </div>
 </div>
+
+</body>
+</html>

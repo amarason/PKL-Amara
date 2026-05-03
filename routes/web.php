@@ -53,6 +53,9 @@ Route::middleware(['auth'])->group(function () {
         // Fitur Rekap & Download Laporan
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
+
+        // Fitur Sinkronisasi Libur Nasional (TAMBAHKAN BARIS INI)
+        Route::post('/sinkronisasi-libur', [AdminController::class, 'syncHolidays'])->name('admin.holidays.sync');
     });
 
     // --- 2. Grup rute khusus peserta PKL ---
