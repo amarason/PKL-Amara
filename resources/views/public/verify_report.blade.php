@@ -5,7 +5,7 @@
         </div>
 
         <h1 class="text-2xl font-black text-slate-800 mb-2">Dokumen Terverifikasi</h1>
-        <p class="text-slate-400 text-sm mb-8 font-medium">Sistem Informasi Prakerja (SIPRAKER) menyatakan bahwa dokumen ini adalah <strong>ASLI</strong>.</p>
+        <p class="text-slate-400 text-sm mb-8 font-medium">Sistem Informasi Praktik Kerja (SIPRAKER) menyatakan bahwa dokumen ini adalah <strong>ASLI</strong>.</p>
 
         <div class="space-y-4 text-left bg-slate-50 p-6 rounded-3xl border border-slate-100">
             <div>

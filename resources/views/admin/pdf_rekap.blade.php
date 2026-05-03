@@ -16,8 +16,8 @@
                 <td class="header-text">
                     <h1>PT PLN INDONESIA POWER</h1>
                     <h2>UBP SEMARANG</h2>
-                    <p>Laporan Rekapitulasi Absensi Peserta Praktek Kerja Lapangan (PKL)</p>
-                    <p class="sub-p">Sistem Informasi Praktek Kerja (SIPRAKER)</p>
+                    <p>Laporan Rekapitulasi Absensi Peserta Praktik Kerja Lapangan (PKL)</p>
+                    <p class="sub-p">Sistem Informasi Praktik Kerja (SIPRAKER)</p>
                 </td>
             </tr>
         </table>
