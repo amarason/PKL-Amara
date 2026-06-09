@@ -4,44 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifikasi Dokumen SIPRAKER</title>
-    {{-- Memanggil Tailwind CSS agar desain muncul --}}
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
-<body class="bg-slate-50 font-sans">
+<body class="bg-gray-100 font-sans text-gray-800">
 
-<div class="min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl border-t-[10px] border-green-500 p-8 text-center">
-        <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
-            <i class="bi bi-patch-check-fill"></i>
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+        
+        <div class="bg-green-600 px-6 py-4 flex items-center gap-3">
+            <i class="bi bi-check-circle-fill text-2xl text-white"></i>
+            <h1 class="text-lg font-semibold text-white">Dokumen Valid</h1>
         </div>
 
-        <h1 class="text-2xl font-black text-slate-800 mb-2">Dokumen Terverifikasi</h1>
-        <p class="text-slate-400 text-sm mb-8 font-medium">Sistem Informasi Praktik Kerja (SIPRAKER) menyatakan bahwa dokumen ini adalah <strong>ASLI</strong>.</p>
+        <div class="p-6">
+            <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+                Sistem Informasi Praktik Kerja (SIPRAKER) PT PLN IP UBP Semarang menyatakan bahwa dokumen ini asli dan terdaftar di dalam database.
+            </p>
 
-        <div class="space-y-4 text-left bg-slate-50 p-6 rounded-3xl border border-slate-100">
-            <div>
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nama Peserta</p>
-                <p class="font-bold text-slate-800">{{ $nama }}</p>
-            </div>
-            <div>
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Asal Instansi</p>
-                <p class="font-bold text-slate-800">{{ $instansi }}</p>
-            </div>
-            <div>
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Periode Magang</p>
-                {{-- Tanggal tidak perlu diubah lagi karena sudah disiapkan dari controller --}}
-                <p class="font-bold text-slate-800">{{ $periode }}</p>
-            </div>
-            <div class="pt-4 border-t border-slate-200">
-                <p class="text-[10px] font-black uppercase text-green-600 tracking-widest">Status Laporan</p>
-                <p class="font-bold text-slate-800">Valid (Bulan {{ $laporan_bulan }} {{ $laporan_tahun }})</p>
+            <div class="border-t border-gray-200 pt-5">
+                <dl class="space-y-3 text-sm">
+                    <div class="grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500 font-medium">Nama Peserta</dt>
+                        <dd class="col-span-2 font-semibold text-gray-900">: {{ $nama }}</dd>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500 font-medium">Instansi Asal</dt>
+                        <dd class="col-span-2 font-semibold text-gray-900">: {{ $instansi }}</dd>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500 font-medium">Periode PKL</dt>
+                        <dd class="col-span-2 font-semibold text-gray-900">: {{ $periode }}</dd>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500 font-medium">Status Laporan</dt>
+                        <dd class="col-span-2 font-semibold text-gray-900">: Rekapitulasi {{ $laporan_bulan }} {{ $laporan_tahun }}</dd>
+                    </div>
+                </dl>
             </div>
         </div>
 
-        <p class="mt-8 text-[10px] text-slate-300 font-bold uppercase tracking-tight italic">
-            Diverifikasi secara digital pada {{ $verified_at }}
-        </p>
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 text-xs text-gray-500 flex justify-between items-center">
+            <span>Waktu Verifikasi:</span>
+            <span class="font-medium">{{ $verified_at }}</span>
+        </div>
+
     </div>
 </div>
 

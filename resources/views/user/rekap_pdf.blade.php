@@ -83,7 +83,7 @@
                 <p><strong>Verifikasi Digital:</strong><br>
                 * Laporan ini diterbitkan secara otomatis oleh sistem SIPRAKER.<br>
                 * Dokumen ini sah dan diakui di lingkungan PT PLN IP UBP Semarang.<br>
-                * Scan QR Code di samping untuk verifikasi data asli.</p>
+                * Scan QR Code di bawah untuk verifikasi data asli.</p>
             </div>
 
             <div class="signature-wrapper">
