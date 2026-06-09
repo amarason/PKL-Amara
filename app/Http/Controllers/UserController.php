@@ -9,7 +9,7 @@ use App\Services\AttendanceDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB; // WAJIB: Tambahkan ini untuk akses tabel libur mentah
+use Illuminate\Support\Facades\DB; 
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Hash;
@@ -74,7 +74,7 @@ class UserController extends Controller
         
         $totalHadir = $h_lengkap + $h_lupa;
         
-        // Memanggil fungsi dari Model yang SUDAH DIPERBAIKI (Sinkron Admin)
+        
         $seharusnyaHadir = $internship->getTotalSeharusnyaHadir();
         $totalAlpha = max(0, $seharusnyaHadir - ($totalHadir + $totalIzin));
 
