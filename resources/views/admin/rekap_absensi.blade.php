@@ -1,6 +1,51 @@
 @extends('layouts.admin')
 
 @section('content')
+{{-- Library Tom Select --}}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+    .ts-control {
+        border-radius: 1rem !important; 
+        border: none !important; 
+        background-color: #f8fafc !important; 
+        padding: 0.75rem 1rem !important; 
+        font-family: inherit !important;
+        font-size: 0.75rem !important; 
+        font-weight: 700 !important; 
+        color: #334155 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .ts-control.focus {
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 2px #3b82f6 !important; 
+    }
+    .ts-dropdown {
+        border-radius: 1rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        margin-top: 0.25rem !important;
+        font-family: inherit !important;
+    }
+    .ts-dropdown .option {
+        padding: 0.75rem 1rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #f8fafc;
+    }
+    .ts-dropdown .option.active, .ts-dropdown .option:hover {
+        background-color: #eff6ff !important; 
+        color: #1d4ed8 !important; 
+    }
+    .ts-wrapper.single .ts-control:after {
+        border-color: #94a3b8 transparent transparent transparent !important;
+        border-width: 5px 4px 0 4px !important;
+    }
+</style>
+
 <div class="space-y-8 pb-20">
     <div>
         <h2 class="text-3xl font-black text-slate-800 tracking-tight">Rekap Absensi</h2>
@@ -10,15 +55,17 @@
     {{-- Filter Panel --}}
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
         <form action="{{ route('admin.rekap.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {{-- Cari Peserta --}}
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Cari Peserta</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Nama / ID..." 
-                    class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4">
+                    class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4 outline-none">
             </div>
 
+            {{-- Instansi --}}
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Instansi</label>
-                <select name="institution_id" class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4 appearance-none">
+                <select name="institution_id" id="filter_instansi" class="w-full" placeholder="Semua Instansi">
                     <option value="">Semua Instansi</option>
                     @foreach($institutions as $inst)
                         <option value="{{ $inst->institution_id }}" {{ request('institution_id') == $inst->institution_id ? 'selected' : '' }}>
@@ -28,35 +75,42 @@
                 </select>
             </div>
 
+            {{-- Status Peserta --}}
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Status Peserta</label>
-                <select name="status" class="w-full bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4 appearance-none">
+                <select name="status" id="filter_status" class="w-full" placeholder="Semua Status">
                     <option value="all" {{ ($status ?? 'all') == 'all' ? 'selected' : '' }}>Semua Status</option>
                     <option value="aktif" {{ ($status ?? 'all') == 'aktif' ? 'selected' : '' }}>Aktif</option>
                     <option value="selesai" {{ ($status ?? 'all') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                 </select>
             </div>
 
+            {{-- Periode --}}
             <div class="space-y-1">
                 <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Periode</label>
                 <div class="flex gap-2">
-                    <select name="bulan" class="w-full bg-slate-50 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4">
-                        <option value="all" {{ $bulan == 'all' ? 'selected' : '' }}>Semua Bulan</option>
-                        @for($m=1; $m<=12; $m++)
-                            @php $val = sprintf('%02d', $m); @endphp
-                            <option value="{{ $val }}" {{ $bulan == $val ? 'selected' : '' }}>
-                                {{ date('F', mktime(0, 0, 0, $m, 1)) }}
-                            </option>
-                        @endfor
-                    </select>
-                    <select name="tahun" class="w-full bg-slate-50 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-blue-500 py-3 px-4">
-                        @for($y = date('Y'); $y >= 2026; $y--)
-                            <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                    </select>
+                    <div class="w-1/2">
+                        <select name="bulan" id="filter_bulan" class="w-full" placeholder="Bulan">
+                            <option value="all" {{ $bulan == 'all' ? 'selected' : '' }}>Semua Bulan</option>
+                            @for($m=1; $m<=12; $m++)
+                                @php $val = sprintf('%02d', $m); @endphp
+                                <option value="{{ $val }}" {{ $bulan == $val ? 'selected' : '' }}>
+                                    {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <select name="tahun" id="filter_tahun" class="w-full" placeholder="Tahun">
+                            @for($y = date('Y'); $y >= 2026; $y--)
+                                <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endfor
+                        </select>
+                    </div>
                 </div>
             </div>
 
+            {{-- Tombol Aksi --}}
             <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                     Filter
@@ -152,7 +206,6 @@
                             </td>
                         </tr>
                     @empty
-                        {{-- PESAN KOSONG YANG SUDAH DIPERBARUI --}}
                         <tr>
                             <td colspan="7" class="px-6 py-20 text-center text-slate-300 italic font-bold">
                                 @if($bulan != 'all')
@@ -168,4 +221,33 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi Tom Select untuk masing-masing dropdown filter
+        new TomSelect('#filter_instansi', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Semua Instansi'
+        });
+
+        new TomSelect('#filter_status', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Semua Status'
+        });
+
+        new TomSelect('#filter_bulan', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Bulan'
+        });
+
+        new TomSelect('#filter_tahun', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Tahun'
+        });
+    });
+</script>
 @endsection

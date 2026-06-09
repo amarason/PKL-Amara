@@ -1,4 +1,48 @@
 @extends('layouts.admin')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+    .ts-control {
+        border-radius: 0.75rem !important; 
+        border: 1px solid #e2e8f0 !important; 
+        background-color: #f8fafc !important; 
+        padding: 0.875rem 1rem !important; 
+        font-family: inherit !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #334155 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .ts-control.focus {
+        background-color: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px #eff6ff !important; 
+    }
+    .ts-dropdown {
+        border-radius: 0.75rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        margin-top: 0.25rem !important;
+        font-family: inherit !important;
+    }
+    .ts-dropdown .option {
+        padding: 0.75rem 1rem !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #f8fafc;
+    }
+    .ts-dropdown .option.active, .ts-dropdown .option:hover {
+        background-color: #eff6ff !important; 
+        color: #1d4ed8 !important; 
+    }
+    .ts-wrapper.single .ts-control:after {
+        border-color: #94a3b8 transparent transparent transparent !important;
+        border-width: 5px 4px 0 4px !important;
+    }
+</style>
 
 @section('content')
 <div class="max-w-4xl mx-auto pb-20 px-4 lg:px-0">
@@ -69,24 +113,25 @@
                         {{-- INSTANSI --}}
                         <div class="space-y-2">
                             <div class="flex justify-between items-center ml-1">
-                                <label class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Instansi</label>
-                                <button type="button" onclick="openModal('institution')" class="text-[10px] font-bold text-blue-500 uppercase hover:underline">+ Tambah</button>
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Instansi</label>
+                                <button type="button" onclick="openModal('institution')" class="text-[11px] font-bold text-blue-600 uppercase hover:text-blue-800 transition-colors">+ Tambah</button>
                             </div>
-                            <select name="institution_id" id="institution_select" required class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
-                                <option value="" disabled selected>Pilih Instansi</option>
+                            <select name="institution_id" id="institution_select" required placeholder="Pilih Instansi Asal...">
+                                <option value="">Pilih Instansi Asal...</option>
                                 @foreach($institutions as $inst)
                                     <option value="{{ $inst->institution_id }}">{{ $inst->institution_name }}</option>
                                 @endforeach
                             </select>
                         </div>
+
                         {{-- JURUSAN --}}
                         <div class="space-y-2">
                             <div class="flex justify-between items-center ml-1">
-                                <label class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Jurusan</label>
-                                <button type="button" onclick="openModal('major')" class="text-[10px] font-bold text-blue-500 uppercase hover:underline">+ Tambah</button>
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Jurusan</label>
+                                <button type="button" onclick="openModal('major')" class="text-[11px] font-bold text-blue-600 uppercase hover:text-blue-800 transition-colors">+ Tambah</button>
                             </div>
-                            <select name="major_id" id="major_select" required class="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold text-slate-700">
-                                <option value="" disabled selected>Pilih Jurusan</option>
+                            <select name="major_id" id="major_select" required placeholder="Pilih Program Studi...">
+                                <option value="">Pilih Program Studi...</option>
                                 @foreach($majors as $major)
                                     <option value="{{ $major->major_id }}">{{ $major->major_name }}</option>
                                 @endforeach
@@ -287,7 +332,23 @@
         closeResetModal();
     }
 
+    var selectInst, selectMajor;
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi tampilan Instansi
+        selectInst = new TomSelect('#institution_select', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Pilih Instansi Asal...'
+        });
+
+        // Inisialisasi tampilan Jurusan
+        selectMajor = new TomSelect('#major_select', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Pilih Program Studi...'
+        });
+
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
 

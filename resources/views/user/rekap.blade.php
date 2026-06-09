@@ -1,6 +1,55 @@
 @extends('layouts.peserta')
 
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+    .ts-control {
+        border-radius: 0.75rem !important; 
+        border: 1px solid #f1f5f9 !important; 
+        background-color: #ffffff !important; 
+        padding: 0.75rem 1rem !important; 
+        font-family: inherit !important;
+        font-size: 0.875rem !important; 
+        font-weight: 700 !important; 
+        color: #475569 !important; 
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .ts-control.focus {
+        background-color: #ffffff !important;
+        border-color: #eff6ff !important;
+        box-shadow: 0 0 0 4px #eff6ff !important; 
+    }
+    .ts-dropdown {
+        background-color: #ffffff !important; 
+        z-index: 50 !important; 
+        border-radius: 0.75rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        margin-top: 0.25rem !important;
+        font-family: inherit !important;
+    }
+    .ts-dropdown .option {
+        background-color: #ffffff !important; 
+        padding: 0.75rem 1rem !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #f8fafc;
+    }
+    .ts-dropdown .option.active, .ts-dropdown .option:hover {
+        background-color: #eff6ff !important; 
+        color: #1d4ed8 !important; 
+    }
+    /* Mengubah warna panah bawaan agar lebih halus */
+    .ts-wrapper.single .ts-control:after {
+        border-color: #94a3b8 transparent transparent transparent !important;
+        border-width: 5px 4px 0 4px !important;
+    }
+</style>
+
 <div class="space-y-10">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -8,26 +57,28 @@
             <p class="text-slate-400 font-bold text-sm mt-1">Pantau konsistensi dan riwayat kehadiran Anda.</p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             {{-- Filter Bulan --}}
-            <form action="{{ route('user.rekap.index') }}" method="GET" class="flex gap-2">
-                <select name="month" class="px-4 py-2 bg-white border border-slate-100 rounded-xl font-bold text-slate-600 text-sm outline-none focus:ring-4 focus:ring-blue-50 transition">
-                    <option value="">Semua Bulan (Periode PKL)</option>
-                    
-                    @for($m=1; $m<=12; $m++)
-                        @php $mVal = sprintf('%02d', $m); @endphp
-                        <option value="{{ $mVal }}" {{ $month == $mVal ? 'selected' : '' }}>
-                            {{ date('F', mktime(0, 0, 0, $m, 1)) }}
-                        </option>
-                    @endfor
-                </select>
-                <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+            <form action="{{ route('user.rekap.index') }}" method="GET" class="flex gap-2 w-full md:w-auto">
+                <div class="min-w-[220px]">
+                    <select name="month" id="filter_bulan" placeholder="Semua Bulan (Periode PKL)">
+                        <option value="">Semua Bulan (Periode PKL)</option>
+                        
+                        @for($m=1; $m<=12; $m++)
+                            @php $mVal = sprintf('%02d', $m); @endphp
+                            <option value="{{ $mVal }}" {{ $month == $mVal ? 'selected' : '' }}>
+                                {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                            </option>
+                        @endfor
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 h-full">
                     Cek
                 </button>
             </form>
             
             <a href="{{ route('user.rekap.pdf', ['month' => $month, 'year' => $year ?? date('Y')]) }}" 
-               class="bg-red-500 text-white px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-600 transition flex items-center shadow-lg shadow-red-100">
+               class="bg-red-500 text-white px-5 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-600 transition flex items-center shadow-lg shadow-red-100">
                 <i class="bi bi-file-pdf mr-2"></i> Export PDF
             </a>
         </div>
@@ -157,4 +208,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new TomSelect('#filter_bulan', {
+            create: false,
+            searchField: ['text'],
+            placeholder: 'Semua Bulan (Periode PKL)'
+        });
+    });
+</script>
 @endsection
