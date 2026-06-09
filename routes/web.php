@@ -17,14 +17,14 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/logout', 'logout')->name('logout');
 });
 
+// --- RUTE VERIFIKASI PUBLIK (DIPINDAH KE SINI BIAR BISA DIAKSES UMUM) ---
+Route::get('/verifikasi/laporan/{hash}', [AdminController::class, 'verifyReport'])->name('report.verify');
+
 // Grup Rute Terproteksi Login (Auth)
 Route::middleware(['auth'])->group(function () {
     Route::get('/settings', [UserController::class, 'settings'])->name('user.settings');
     Route::post('/settings/password', [UserController::class, 'updatePassword'])->name('user.password.update');
     
-    // --- RUTE VERIFIKASI PUBLIK (Bisa diakses tanpa login agar instansi luar bisa scan QR) ---
-    Route::get('/verifikasi/laporan/{hash}', [AdminController::class, 'verifyReport'])->name('report.verify');
-
     // --- 1. Grup rute khusus admin ---
     Route::middleware(['role:ROLE_ADMIN'])->prefix('admin')->group(function () {
         // Dashboard Admin
@@ -54,7 +54,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rekap-absensi', [AdminController::class, 'indexRekap'])->name('admin.rekap.index');
         Route::get('/rekap-absensi/export-pdf', [AdminController::class, 'exportRekapPdf'])->name('admin.rekap.pdf');
 
-        // Fitur Sinkronisasi Libur Nasional (TAMBAHKAN BARIS INI)
+        // Fitur Sinkronisasi Libur Nasional 
         Route::post('/sinkronisasi-libur', [AdminController::class, 'syncHolidays'])->name('admin.holidays.sync');
     });
 
@@ -68,7 +68,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/absensi/masuk', [UserController::class, 'storeMasuk'])->name('user.absensi.masuk');
         Route::post('/absensi/pulang', [UserController::class, 'storePulang'])->name('user.absensi.pulang');
         
-
         // Fitur Pengajuan Izin
         Route::get('/izin', [UserController::class, 'indexIzin'])->name('user.izin.index');
         Route::post('/izin/store', [UserController::class, 'storeIzin'])->name('user.izin.store');

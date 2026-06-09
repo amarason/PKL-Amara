@@ -526,7 +526,8 @@ class AdminController extends Controller
         $hash = Crypt::encryptString($institution_id . '|' . $bulan . '|' . $tahun . '|' . $search);
         // Gunakan IP address lokal jika di localhost untuk bisa di-scan dari HP
         $verifyUrl = $this->generateAccessibleUrl('report.verify', ['hash' => $hash]);
-        $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
+        // $qrcode = base64_encode(QrCode::format('svg')->size(80)->errorCorrection('H')->generate($verifyUrl));
+        $qrcode = base64_encode(QrCode::format('svg')->size(300)->errorCorrection('M')->margin(1)->generate($verifyUrl));
 
         $pdf = Pdf::loadView('admin.pdf_rekap', compact(
             'peserta', 'bulan', 'tahun', 'namaBulan', 'namaInstansi', 'qrcode', 'logoData', 'globalStats', 'subJudul'
@@ -592,18 +593,28 @@ class AdminController extends Controller
                 
                 if (count($parts) === 4) {
                     // SKENARIO 1: LAPORAN REKAP KOLEKTIF
-                    [$institution_id, $bulan, $tahun, $search] = $parts;
-                    
-                    $namaInstansi = "Semua Instansi";
-                    if ($institution_id) {
-                        $instansiQuery = \App\Models\Institution::find($institution_id);
-                        if ($instansiQuery) $namaInstansi = $instansiQuery->institution_name;
+                    [$institution_id, $bulan, $tahun, $search] = $parts; //
+
+                    $namaInstansi = "Semua Instansi"; //
+                    if ($institution_id) { //
+                        $instansiQuery = \App\Models\Institution::find($institution_id); //
+                        if ($instansiQuery) $namaInstansi = $instansiQuery->institution_name; //
                     }
 
-                    // Perbaikan teks nama peserta
-                    $namaPeserta = "Seluruh Peserta Magang";
+                    $namaPeserta = "Seluruh Peserta Magang"; //
                     if ($search) {
-                        $namaPeserta = "Hasil Pencarian: " . $search;
+                        $matchedNames = \App\Models\Internship::whereHas('user', function($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('login_id', 'like', "%{$search}%");
+                        })->with('user')->get()->pluck('user.name')->unique()->toArray();
+
+                        if (!empty($matchedNames)) {
+                            // Jika ditemukan, gabungkan dengan koma (antisipasi jika keyword pencarian mencakup lebih dari 1 orang)
+                            $namaPeserta = "Hasil Pencarian: " . implode(', ', $matchedNames);
+                        } else {
+                            // Fallback jika data pesertanya sudah dihapus permanen dari database
+                            $namaPeserta = "Hasil Pencarian: " . $search; //
+                        }
                     }
 
                     return [
